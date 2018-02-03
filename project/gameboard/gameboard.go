@@ -72,6 +72,66 @@ func LPiece(c BlockColor) Piece {
 		id:    IdLPiece,
 	}
 }
+func SPiece(c BlockColor) Piece{
+	return Piece{
+		piece: [4]Block{
+			Block{row: 0, col: 1},
+			Block{row: 0, col: 2},
+			Block{row: 1, col: 0},
+			Block{row: 1, col: 1},
+		},
+		color: c,
+		id:    IdSPiece,
+	}
+}
+func TPiece(c BlockColor) Piece{
+	return Piece{
+		piece: [4]Block{
+			Block{row: 0, col: 1},
+			Block{row: 1, col: 0},
+			Block{row: 1, col: 1},
+			Block{row: 1, col: 2},
+		},
+		color: c,
+		id:    IdTPiece,
+	}
+}
+func ZPiece(c BlockColor) Piece{
+	return Piece{
+		piece: [4]Block{
+			Block{row: 0, col: 0},
+			Block{row: 0, col: 1},
+			Block{row: 1, col: 1},
+			Block{row: 1, col: 2},
+		},
+		color: c,
+		id:    IdZPiece,
+	}
+}
+func IPiece(c BlockColor) Piece{
+	return Piece{
+		piece: [4]Block{
+			Block{row: 0, col: 0},
+			Block{row: 0, col: 1},
+			Block{row: 0, col: 2},
+			Block{row: 0, col: 3},
+		},
+		color: c,
+		id:    IdIPiece,
+	}
+}
+func OPiece(c BlockColor) Piece{
+	return Piece{
+		piece: [4]Block{
+			Block{row: 0, col: 1},
+			Block{row: 0, col: 2},
+			Block{row: 1, col: 1},
+			Block{row: 1, col: 2},
+		},
+		color: c,
+		id:    IdOPiece,
+	}
+}
 
 func randomPiece() Piece {
 	p := rand.Intn(2)
@@ -82,8 +142,8 @@ func randomPiece() Piece {
 	}
 }
 
-//TO DO
-//s,t,z,i,o
+
+
 
 type BlockColor int
 
