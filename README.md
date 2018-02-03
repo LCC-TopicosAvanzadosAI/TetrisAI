@@ -1,2 +1,2 @@
 # TetrisAI
-Juego del Tetris con agentes inteligentes
+Juego del Tetris con agentes inteligentes usando aprendizaje por refuerzo
