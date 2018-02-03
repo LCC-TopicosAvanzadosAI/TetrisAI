@@ -132,13 +132,23 @@ func OPiece(c BlockColor) Piece{
 		id:    IdOPiece,
 	}
 }
-
+//j,l,s,t,z,i,o
 func randomPiece() Piece {
-	p := rand.Intn(2)
+	p := rand.Intn(7)
 	if p == 0 {
-		return LPiece(1)
-	} else {
 		return JPiece(1)
+	}else if p == 1 {
+		return LPiece(1)
+	}else if p == 2 {
+		return SPiece(1)
+	}else if p == 3 {
+		return TPiece(1)
+	}else if p == 4 {
+		return ZPiece(1)
+	}else if p == 5 {
+		return IPiece(1)
+	}else if p == 6 {
+		return OPiece(1)
 	}
 }
 
