@@ -43,12 +43,38 @@ func run() {
 	fmt.Println(gameBoard)
 
 	//gameBoard.DisplayBoard(win, blockGen)
+
+	win.Update()
+	gameBoard.DisplayBoard(win, blockGen)
+	win.Clear(colornames.Black)
+
+	go func() {
+		for {
+			time.Sleep(time.Second * 1)
+			gameBoard.Gravity()
+			win.Clear(colornames.Black)
+			gameBoard.DisplayBoard(win, blockGen)
+
+		}
+
+	}()
+
 	for {
+
 		win.Update()
-		gameBoard.Gravity()
 		win.Clear(colornames.Black)
 		gameBoard.DisplayBoard(win, blockGen)
-		time.Sleep(time.Second * 1)
+
+		if win.Pressed(pixelgl.KeyRight) {
+			gameBoard.MovePiece(gb.MoveRight)
+		}
+
+		if win.Pressed(pixelgl.KeyLeft) {
+			gameBoard.MovePiece(gb.MoveLeft)
+		}
+		if win.Pressed(pixelgl.KeyUp) {
+			gameBoard.RotatePiece()
+		}
 
 		//fmt.Println(gameBoard)
 	}
