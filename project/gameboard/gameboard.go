@@ -17,8 +17,8 @@ type Movement int
 
 const (
 	moveDown  Movement = -1
-	moveLeft           = -1
-	moveRight          = 1
+	MoveLeft           = -1
+	MoveRight          = 1
 	nothing            = 0
 )
 
@@ -36,6 +36,11 @@ type IdPiece int
 const (
 	IdJPiece IdPiece = iota
 	IdLPiece
+	IdSPiece
+	IdTPiece
+	IdZPiece
+	IdIPiece
+	IdOPiece
 )
 
 //And each Shape has 4 different positions on the board, that is when you rotate it, so a Piece is made of 4 different shapes.
@@ -72,7 +77,7 @@ func LPiece(c BlockColor) Piece {
 		id:    IdLPiece,
 	}
 }
-func SPiece(c BlockColor) Piece{
+func SPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
 			Block{row: 0, col: 1},
@@ -84,7 +89,7 @@ func SPiece(c BlockColor) Piece{
 		id:    IdSPiece,
 	}
 }
-func TPiece(c BlockColor) Piece{
+func TPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
 			Block{row: 0, col: 1},
@@ -96,7 +101,7 @@ func TPiece(c BlockColor) Piece{
 		id:    IdTPiece,
 	}
 }
-func ZPiece(c BlockColor) Piece{
+func ZPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
 			Block{row: 0, col: 0},
@@ -108,7 +113,7 @@ func ZPiece(c BlockColor) Piece{
 		id:    IdZPiece,
 	}
 }
-func IPiece(c BlockColor) Piece{
+func IPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
 			Block{row: 0, col: 0},
@@ -120,7 +125,7 @@ func IPiece(c BlockColor) Piece{
 		id:    IdIPiece,
 	}
 }
-func OPiece(c BlockColor) Piece{
+func OPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
 			Block{row: 0, col: 1},
@@ -132,28 +137,25 @@ func OPiece(c BlockColor) Piece{
 		id:    IdOPiece,
 	}
 }
+
 //j,l,s,t,z,i,o
 func randomPiece() Piece {
 	p := rand.Intn(7)
 	if p == 0 {
 		return JPiece(1)
-	}else if p == 1 {
+	} else if p == 1 {
 		return LPiece(1)
-	}else if p == 2 {
+	} else if p == 2 {
 		return SPiece(1)
-	}else if p == 3 {
+	} else if p == 3 {
 		return TPiece(1)
-	}else if p == 4 {
+	} else if p == 4 {
 		return ZPiece(1)
-	}else if p == 5 {
+	} else if p == 5 {
 		return IPiece(1)
-	}else if p == 6 {
-		return OPiece(1)
 	}
+	return OPiece(1)
 }
-
-
-
 
 type BlockColor int
 
@@ -216,17 +218,49 @@ func (b *Board) checkCollision(p Piece, _r, _c Movement) bool {
 	return false
 }
 
+func (b *Board) RotatePiece() {
+
+	if b.activePiece.id == IdOPiece {
+		return
+	}
+
+	b.drawPiece(b.activePiece, Empty)
+
+	pivot := b.activePiece.piece[1]
+	arr := []int{0, 2, 3}
+	for i := range arr {
+		fmt.Println(i)
+		dRow := pivot.row - b.activePiece.piece[i].row
+		dCol := pivot.col - b.activePiece.piece[i].col
+		b.activePiece.piece[i].row = pivot.row + (dCol * -1)
+		b.activePiece.piece[i].col = pivot.col + (dRow)
+	}
+	b.drawPiece(b.activePiece, b.activePiece.color)
+}
+
+func (b *Board) MovePiece(dir Movement) {
+	b.drawPiece(b.activePiece, Empty)
+
+	if !b.checkCollision(b.activePiece, nothing, dir) {
+		b.activePiece.movePiece(nothing, dir)
+	}
+
+	b.drawPiece(b.activePiece, b.activePiece.color)
+
+}
+
 func (b *Board) Gravity() {
 	//blockType := b[activeShape[0].row][activeShape[0].col]
 	// Erase old piece
 
 	// Does the block collide if it moves down?
 	//didCollide := b.checkCollision()
-	fmt.Println(b.activePiece)
+	//fmt.Println(b.activePiece)
 	b.drawPiece(b.activePiece, Empty)
 	if !b.checkCollision(b.activePiece, moveDown, nothing) {
 		b.activePiece.movePiece(moveDown, nothing)
 	} else {
+		b.drawPiece(b.activePiece, b.activePiece.color)
 		b.AddPiece()
 	}
 	b.drawPiece(b.activePiece, b.activePiece.color)
@@ -302,7 +336,7 @@ func (b *Board) DisplayBoard(win *pixelgl.Window, blockGen func(int) pixel.Pictu
 }
 
 func (b *Board) drawPiece(p Piece, c BlockColor) {
-	fmt.Println("c:: ", c)
+	//fmt.Println("c:: ", c)
 	for i := 0; i < 4; i++ {
 		//	b[activeShape[i].row][activeShape[i].col] = t
 		//b[p.piece[p.position][i].row][p.piece[p.position][i].col] = p.color
