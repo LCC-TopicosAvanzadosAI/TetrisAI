@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	pixelgl.Run(run)
+	pixelgl.Run(run) //para correr la wea gráfica
 }
 
 func run() {
