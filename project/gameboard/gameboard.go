@@ -16,10 +16,11 @@ const (
 type Movement int
 
 const (
-	moveDown  Movement = -1
-	MoveLeft           = -1
-	MoveRight          = 1
-	nothing            = 0
+	MoveDown     Movement = -1
+	MoveLeft              = -1
+	MoveRight             = 1
+	nothing               = 0
+	MoveToBottom          = -2
 )
 
 //This is the most simple unit. It means that we have a 'Block' on row x and col y
@@ -141,20 +142,21 @@ func OPiece(c BlockColor) Piece {
 //j,l,s,t,z,i,o
 func randomPiece() Piece {
 	p := rand.Intn(7)
+
 	if p == 0 {
 		return JPiece(1)
 	} else if p == 1 {
-		return LPiece(1)
+		return LPiece(2)
 	} else if p == 2 {
-		return SPiece(1)
+		return SPiece(3)
 	} else if p == 3 {
-		return TPiece(1)
+		return TPiece(4)
 	} else if p == 4 {
-		return ZPiece(1)
+		return ZPiece(5)
 	} else if p == 5 {
-		return IPiece(1)
+		return IPiece(6)
 	}
-	return OPiece(1)
+	return OPiece(7)
 }
 
 type BlockColor int
@@ -241,7 +243,11 @@ func (b *Board) RotatePiece() {
 func (b *Board) MovePiece(dir Movement) {
 	b.drawPiece(b.activePiece, Empty)
 
-	if !b.checkCollision(b.activePiece, nothing, dir) {
+	if dir == MoveToBottom {
+		for !b.checkCollision(b.activePiece, dir, nothing) {
+			b.activePiece.movePiece(dir, nothing)
+		}
+	} else if !b.checkCollision(b.activePiece, nothing, dir) {
 		b.activePiece.movePiece(nothing, dir)
 	}
 
@@ -257,8 +263,8 @@ func (b *Board) Gravity() {
 	//didCollide := b.checkCollision()
 	//fmt.Println(b.activePiece)
 	b.drawPiece(b.activePiece, Empty)
-	if !b.checkCollision(b.activePiece, moveDown, nothing) {
-		b.activePiece.movePiece(moveDown, nothing)
+	if !b.checkCollision(b.activePiece, MoveDown, nothing) {
+		b.activePiece.movePiece(MoveDown, nothing)
 	} else {
 		b.drawPiece(b.activePiece, b.activePiece.color)
 		b.AddPiece()
