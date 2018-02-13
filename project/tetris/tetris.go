@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/faiface/pixel/text"
+	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/colornames"
+	"golang.org/x/image/font"
 	_ "image/png"
-	"time"
+	"io/ioutil"
+	"os"
 
-	gb "github.com/TetrisAI/project/gameboard"
-	hp "github.com/TetrisAI/project/helper"
+	//gb "github.com/TetrisAI/project/gameboard"
+	//hp "github.com/TetrisAI/project/helper"
+	mn "github.com/TetrisAI/project/menu"
 )
 
 func main() {
@@ -17,10 +22,11 @@ func main() {
 }
 
 func run() {
+	//Window creation
 	windowWidth := 765.0
 	windowHeight := 450.0
 	cfg := pixelgl.WindowConfig{
-		Title:  "Blockfall",
+		Title:  "Tetris Menu",
 		Bounds: pixel.R(0, 0, windowWidth, windowHeight),
 		VSync:  true,
 	}
@@ -30,53 +36,75 @@ func run() {
 		panic(err)
 	}
 
-	var blockGen func(int) pixel.Picture
+	menu := mn.NewMenu()
+	fmt.Println(menu)
 
-	blockGen, err = hp.LoadSpriteSheet("./../../resources/blocks.png", 2, 8)
+	menu.DisplayMenu(win)
+	win.Clear(colornames.Black)
 
+	face, err := loadTTF("saarland.ttf", 52)
 	if err != nil {
 		panic(err)
 	}
-	gameBoard := gb.NewGameBoard()
-	gameBoard.AddPiece()
 
-	fmt.Println(gameBoard)
+	Atlas := text.NewAtlas(face, text.ASCII)
+	basicTxt := text.New(pixel.V(windowWidth/2, 200), Atlas)
 
-	//gameBoard.DisplayBoard(win, blockGen)
+	basicTxt.LineHeight = Atlas.LineHeight() * 1.5
 
-	win.Update()
-	gameBoard.DisplayBoard(win, blockGen)
-	win.Clear(colornames.Black)
+	txt := "Jugar"
+	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
+	basicTxt.Color = colornames.Aqua
+	fmt.Fprintln(basicTxt, txt)
+	rectJugar := pixel.Rect(basicTxt.Bounds())
+	txt = "Aprender"
+	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
+	basicTxt.Color = colornames.Green
+	fmt.Fprintln(basicTxt, txt)
+	//rectAprender := basicTxt.R()
+	txt = "Cerrar"
+	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
+	basicTxt.Color = colornames.Blue
+	fmt.Fprintln(basicTxt, txt)
+	//rectCerrar := basicTxt.R()
 
-	go func() {
-		for {
-			time.Sleep(time.Second * 1)
-			gameBoard.Gravity()
-			win.Clear(colornames.Black)
-			gameBoard.DisplayBoard(win, blockGen)
-
-		}
-
-	}()
-
-	for {
-
-		win.Update()
+	//fmt.Println("cords jugar: ", rectJugar.Min.X, " ", rectJugar.Min.Y, " ", rectJugar.Max.X, " ", rectJugar.Max.Y)
+	for !win.Closed() {
 		win.Clear(colornames.Black)
-		gameBoard.DisplayBoard(win, blockGen)
+		basicTxt.Draw(win, pixel.IM)
+		//basicTxt.Draw(win, pixel.IM.Scaled(basicTxt.Orig, 4))
+		win.Update()
 
-		if win.Pressed(pixelgl.KeyRight) {
-			gameBoard.MovePiece(gb.MoveRight)
-		}
+		menu.DisplayMenu(win)
+		//fmt.Println(win.MousePosition().X, " ", win.MousePosition().Y)
 
-		if win.Pressed(pixelgl.KeyLeft) {
-			gameBoard.MovePiece(gb.MoveLeft)
+		if rectJugar.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft) {
+			menu.Jugar(win)
+			//draw.Draw(rectJugar, pixel.IM)
+			//draw.Draw(rectJugar)
 		}
-		if win.Pressed(pixelgl.KeyUp) {
-			gameBoard.RotatePiece()
-		}
+	}
+}
 
-		//fmt.Println(gameBoard)
+func loadTTF(path string, size float64) (font.Face, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
 	}
 
+	font, err := truetype.Parse(bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return truetype.NewFace(font, &truetype.Options{
+		Size:              size,
+		GlyphCacheEntries: 1,
+	}), nil
 }
