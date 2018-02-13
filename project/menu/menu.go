@@ -62,9 +62,9 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 
 	//movimiento de las piezas
 	for {
-		win.Update()
 		win.Clear(colornames.Black)
 		gameBoard.DisplayBoard(win, blockGen)
+		win.Update()
 
 		if win.Pressed(pixelgl.KeyRight) {
 			gameBoard.MovePiece(gb.MoveRight)
