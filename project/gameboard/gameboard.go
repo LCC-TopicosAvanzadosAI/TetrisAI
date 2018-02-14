@@ -57,10 +57,10 @@ type Piece struct {
 func JPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
-			Block{row: 0, col: 0},
+			Block{row: 1, col: 0},
 			Block{row: 0, col: 1},
+			Block{row: 0, col: 0},
 			Block{row: 0, col: 2},
-			Block{row: 1, col: 2},
 		},
 		color: c,
 		id:    IdJPiece,
@@ -69,10 +69,10 @@ func JPiece(c BlockColor) Piece {
 func LPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
-			Block{row: 0, col: 0},
-			Block{row: 0, col: 1},
-			Block{row: 0, col: 2},
 			Block{row: 1, col: 0},
+			Block{row: 1, col: 1},
+			Block{row: 1, col: 2},
+			Block{row: 0, col: 0},
 		},
 		color: c,
 		id:    IdLPiece,
@@ -81,58 +81,58 @@ func LPiece(c BlockColor) Piece {
 func SPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
+			Block{row: 0, col: 0},
 			Block{row: 0, col: 1},
-			Block{row: 0, col: 2},
-			Block{row: 1, col: 0},
 			Block{row: 1, col: 1},
+			Block{row: 1, col: 2},
 		},
 		color: c,
 		id:    IdSPiece,
 	}
 }
-func TPiece(c BlockColor) Piece {
-	return Piece{
-		piece: [4]Block{
-			Block{row: 0, col: 1},
-			Block{row: 1, col: 0},
-			Block{row: 1, col: 1},
-			Block{row: 1, col: 2},
-		},
-		color: c,
-		id:    IdTPiece,
-	}
-}
-func ZPiece(c BlockColor) Piece {
-	return Piece{
-		piece: [4]Block{
-			Block{row: 0, col: 0},
-			Block{row: 0, col: 1},
-			Block{row: 1, col: 1},
-			Block{row: 1, col: 2},
-		},
-		color: c,
-		id:    IdZPiece,
-	}
-}
 func IPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
-			Block{row: 0, col: 0},
-			Block{row: 0, col: 1},
-			Block{row: 0, col: 2},
-			Block{row: 0, col: 3},
+			Block{row: 1, col: 0},
+			Block{row: 1, col: 1},
+			Block{row: 1, col: 2},
+			Block{row: 1, col: 3},
 		},
 		color: c,
 		id:    IdIPiece,
 	}
 }
+func ZPiece(c BlockColor) Piece {
+	return Piece{
+		piece: [4]Block{
+			Block{row: 1, col: 0},
+			Block{row: 1, col: 1},
+			Block{row: 0, col: 1},
+			Block{row: 0, col: 2},
+		},
+		color: c,
+		id:    IdZPiece,
+	}
+}
+func TPiece(c BlockColor) Piece {
+	return Piece{
+		piece: [4]Block{
+			Block{row: 1, col: 0},
+			Block{row: 1, col: 1},
+			Block{row: 1, col: 2},
+			Block{row: 0, col: 1},
+		},
+		color: c,
+		id:    IdTPiece,
+	}
+}
 func OPiece(c BlockColor) Piece {
 	return Piece{
 		piece: [4]Block{
-			Block{row: 0, col: 1},
-			Block{row: 0, col: 2},
+			Block{row: 1, col: 0},
 			Block{row: 1, col: 1},
-			Block{row: 1, col: 2},
+			Block{row: 0, col: 0},
+			Block{row: 0, col: 1},
 		},
 		color: c,
 		id:    IdOPiece,
@@ -220,6 +220,21 @@ func (b *Board) checkCollision(p Piece, _r, _c Movement) bool {
 	return false
 }
 
+func (p *Piece) Rotate() {
+
+	pivot := p.piece[1]
+	arr := []int{0, 2, 3}
+	for _, i := range arr {
+		dRow := pivot.row - p.piece[i].row
+		dCol := pivot.col - p.piece[i].col
+		p.piece[i].row = pivot.row + (dCol * -1)
+		p.piece[i].col = pivot.col + (dRow)
+	}
+
+	fmt.Println("")
+
+}
+
 func (b *Board) RotatePiece() {
 
 	if b.activePiece.id == IdOPiece {
@@ -227,17 +242,25 @@ func (b *Board) RotatePiece() {
 	}
 
 	b.drawPiece(b.activePiece, Empty)
+	copy := b.activePiece
+	b.activePiece.Rotate()
 
-	pivot := b.activePiece.piece[1]
-	arr := []int{0, 2, 3}
-	for i := range arr {
-		fmt.Println(i)
-		dRow := pivot.row - b.activePiece.piece[i].row
-		dCol := pivot.col - b.activePiece.piece[i].col
-		b.activePiece.piece[i].row = pivot.row + (dCol * -1)
-		b.activePiece.piece[i].col = pivot.col + (dRow)
+	if b.checkCollision(b.activePiece, nothing, nothing) {
+		if !b.checkCollision(b.activePiece, nothing, MoveRight) {
+			b.activePiece.movePiece(nothing, MoveRight)
+		} else if !b.checkCollision(b.activePiece, nothing, MoveLeft) {
+			b.activePiece.movePiece(nothing, MoveLeft)
+		} else if !b.checkCollision(b.activePiece, MoveDown, nothing) {
+			b.activePiece.movePiece(MoveDown, nothing)
+		} else {
+			b.activePiece = copy
+			b.drawPiece(b.activePiece, b.activePiece.color)
+			return
+		}
 	}
+
 	b.drawPiece(b.activePiece, b.activePiece.color)
+
 }
 
 func (b *Board) MovePiece(dir Movement) {
@@ -255,27 +278,20 @@ func (b *Board) MovePiece(dir Movement) {
 
 }
 
-func (b *Board) Gravity() {
-	//blockType := b[activeShape[0].row][activeShape[0].col]
-	// Erase old piece
-
-	// Does the block collide if it moves down?
-	//didCollide := b.checkCollision()
-	//fmt.Println(b.activePiece)
+func (b *Board) Gravity() bool {
+	//We remove the piece that we're trying to move down
 	b.drawPiece(b.activePiece, Empty)
+	//If there are no collisions we move the piece down.
 	if !b.checkCollision(b.activePiece, MoveDown, nothing) {
 		b.activePiece.movePiece(MoveDown, nothing)
-	} else {
+	} else { //If there are collision we don't move down the piece and we add a new piece
 		b.drawPiece(b.activePiece, b.activePiece.color)
 		b.AddPiece()
-	}
-	b.drawPiece(b.activePiece, b.activePiece.color)
-	/*if didCollide {
-		b.checkRowCompletion(activeShape)
-		b.addPiece() // Replace with random piece
 		return true
-	}*/
-	//return false
+	}
+	//Draw the piece that we remove.
+	b.drawPiece(b.activePiece, b.activePiece.color)
+	return false
 }
 
 func (b *Board) AddPiece() {

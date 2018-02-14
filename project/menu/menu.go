@@ -6,6 +6,7 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
 	_ "image/png"
+	"math"
 	"time"
 
 	gb "github.com/TetrisAI/project/gameboard"
@@ -50,7 +51,7 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 	win.Clear(colornames.Black)
 
 	go func() {
-		for {
+		for !win.Closed() {
 			time.Sleep(time.Second * 1)
 			gameBoard.Gravity()
 			win.Clear(colornames.Black)
@@ -61,23 +62,50 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 	}()
 
 	//movimiento de las piezas
-	for {
+	MovementDelay := 0.0
+	moveCounter := 0
+	last := time.Now()
+	for !win.Closed() {
+		dt := time.Since(last).Seconds()
+		last = time.Now()
+
+		if MovementDelay > 0.0 {
+			MovementDelay = math.Max(MovementDelay-dt, 0.0)
+		}
+
+		if win.Pressed(pixelgl.KeyRight) && MovementDelay == 0 {
+			gameBoard.MovePiece(gb.MoveRight)
+			if moveCounter > 0 {
+				MovementDelay = 0.1
+			} else {
+				MovementDelay = 0.5
+			}
+			moveCounter++
+		}
+		if win.Pressed(pixelgl.KeyLeft) && MovementDelay == 0 {
+			gameBoard.MovePiece(gb.MoveLeft)
+			if moveCounter > 0 {
+				MovementDelay = 0.1
+			} else {
+				MovementDelay = 0.5
+			}
+			moveCounter++
+		}
+		if win.JustPressed(pixelgl.KeyUp) {
+			gameBoard.RotatePiece()
+		}
+		if win.JustPressed(pixelgl.KeyDown) {
+			gameBoard.MovePiece(gb.MoveToBottom)
+		}
+
+		if !win.Pressed(pixelgl.KeyRight) && !win.Pressed(pixelgl.KeyLeft) {
+			moveCounter = 0
+			MovementDelay = 0.0
+		}
+
 		win.Update()
 		win.Clear(colornames.Black)
 		gameBoard.DisplayBoard(win, blockGen)
-
-		if win.Pressed(pixelgl.KeyRight) {
-			gameBoard.MovePiece(gb.MoveRight)
-		}
-		if win.Pressed(pixelgl.KeyLeft) {
-			gameBoard.MovePiece(gb.MoveLeft)
-		}
-		if win.Pressed(pixelgl.KeyUp) {
-			gameBoard.RotatePiece()
-		}
-		if win.Pressed(pixelgl.KeyDown) {
-			gameBoard.MovePiece(gb.MoveToBottom)
-		}
 
 		//fmt.Println(gameBoard)
 	}
