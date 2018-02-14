@@ -37,55 +37,54 @@ func run() {
 	}
 
 	menu := mn.NewMenu()
-	fmt.Println(menu)
-
+	//fmt.Println(menu)
 	menu.DisplayMenu(win)
 	win.Clear(colornames.Black)
 
-	face, err := loadTTF("saarland.ttf", 52)
+	face, err := loadTTF("saarland.ttf", 52) //Loading font and size-font
 	if err != nil {
 		panic(err)
 	}
 
-	Atlas := text.NewAtlas(face, text.ASCII)
-	basicTxt := text.New(pixel.V(windowWidth/2, 200), Atlas)
+	Atlas := text.NewAtlas(face, text.ASCII)                 //Atlas necessary for the font
+	basicTxt := text.New(pixel.V(windowWidth/2, 200), Atlas) //here, I put the coordinates where the texts starts to write
 
-	basicTxt.LineHeight = Atlas.LineHeight() * 1.5
+	basicTxt.LineHeight = Atlas.LineHeight() * 1.5 // line spacing between strings
 
 	txt := "Jugar"
-	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
-	basicTxt.Color = colornames.Aqua
-	fmt.Fprintln(basicTxt, txt)
-	rectJugar := pixel.Rect(basicTxt.Bounds())
+	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2 //centralize text
+	basicTxt.Color = colornames.Aqua                 //text color
+	fmt.Fprintln(basicTxt, txt)                      //put the text in the window
+	rectJugar := pixel.Rect(basicTxt.Bounds())       //creation a rectangle around the text
+
 	txt = "Aprender"
 	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
 	basicTxt.Color = colornames.Green
 	fmt.Fprintln(basicTxt, txt)
-	//rectAprender := basicTxt.R()
+	//rectAprender := pixel.Rect(basicTxt.Bounds())
+
 	txt = "Cerrar"
 	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
 	basicTxt.Color = colornames.Blue
 	fmt.Fprintln(basicTxt, txt)
-	//rectCerrar := basicTxt.R()
+	//rectCerrar := pixel.Rect(basicTxt.Bounds())
 
 	//fmt.Println("cords jugar: ", rectJugar.Min.X, " ", rectJugar.Min.Y, " ", rectJugar.Max.X, " ", rectJugar.Max.Y)
 	for !win.Closed() {
 		win.Clear(colornames.Black)
 		basicTxt.Draw(win, pixel.IM)
-		//basicTxt.Draw(win, pixel.IM.Scaled(basicTxt.Orig, 4))
 		win.Update()
 
 		menu.DisplayMenu(win)
 		//fmt.Println(win.MousePosition().X, " ", win.MousePosition().Y)
 
-		if rectJugar.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft) {
+		if (rectJugar.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft)) || win.Pressed(pixelgl.KeyEnter) {
 			menu.Jugar(win)
-			//draw.Draw(rectJugar, pixel.IM)
-			//draw.Draw(rectJugar)
 		}
 	}
 }
 
+//Necessary function to load fonts
 func loadTTF(path string, size float64) (font.Face, error) {
 	file, err := os.Open(path)
 	if err != nil {
