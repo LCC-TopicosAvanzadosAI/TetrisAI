@@ -5,7 +5,7 @@ import (
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"math/rand"
-	_ "time"
+	"time"
 )
 
 const (
@@ -139,26 +139,6 @@ func OPiece(c BlockColor) Piece {
 	}
 }
 
-//j,l,s,t,z,i,o
-func randomPiece() Piece {
-	p := rand.Intn(7)
-
-	if p == 0 {
-		return JPiece(1)
-	} else if p == 1 {
-		return LPiece(2)
-	} else if p == 2 {
-		return SPiece(3)
-	} else if p == 3 {
-		return TPiece(4)
-	} else if p == 4 {
-		return ZPiece(5)
-	} else if p == 5 {
-		return IPiece(6)
-	}
-	return OPiece(7)
-}
-
 type BlockColor int
 
 //type Board [BoardRows][BoardCols]BlockColor
@@ -190,15 +170,36 @@ type Board struct {
 	activeShape int
 	nextPiece   Piece
 	gameOver    bool
+	PieceArray  []Piece
 }
 
-//----
-
 func NewGameBoard() Board {
-	return Board{
-		nextPiece: randomPiece(),
-		gameOver:  false,
+
+	board := Board{
+		gameOver: false,
 	}
+
+	board.FillArray()
+
+	return board
+}
+
+func (b *Board) FillArray() {
+	b.PieceArray = append(b.PieceArray, JPiece(1), LPiece(2), SPiece(3),
+		TPiece(4), ZPiece(5), IPiece(6), OPiece(7))
+
+	dest := make([]Piece, len(b.PieceArray))
+	rand.Seed(time.Now().Unix())
+	perm := rand.Perm(len(b.PieceArray))
+	for i, v := range perm {
+		dest[v] = b.PieceArray[i]
+	}
+
+	for i := range perm {
+		b.PieceArray[i] = dest[i]
+	}
+	b.nextPiece = b.PieceArray[0]
+
 }
 
 func (p *Piece) movePiece(rows, cols Movement) {
@@ -295,21 +296,24 @@ func (b *Board) Gravity() bool {
 }
 
 func (b *Board) AddPiece() {
-	var offset int
 	/*if p.Id == IdIPiece {
 		offset = rand.Intn(7)
 	} else if p.Id == OPiece {
 		offset = rand.Intn(9)
 	} else {*/
-	offset = rand.Intn(8)
 	//}
 	//baseShape := getShapeFromPiece(nextPiece)
 	//baseShape = moveShape(20, offset, baseShape)
-	b.nextPiece.movePiece(Movement(16), Movement(offset))
+	b.nextPiece.movePiece(Movement(16), Movement(4))
 	b.activePiece = b.nextPiece
 	b.drawPiece(b.activePiece, b.activePiece.color)
-	b.nextPiece = randomPiece()
 
+	//remove a piece or refill the PieceArray
+	b.PieceArray = append(b.PieceArray[:0], b.PieceArray[1:]...) //remove a piece of PieceArray
+	if len(b.PieceArray) <= 0 {
+		b.FillArray()
+	}
+	b.nextPiece = b.PieceArray[0]
 }
 
 func (b *Board) DisplayBoard(win *pixelgl.Window, blockGen func(int) pixel.Picture) {

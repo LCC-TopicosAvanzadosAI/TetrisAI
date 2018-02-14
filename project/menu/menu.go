@@ -62,6 +62,7 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 	}()
 
 	//movimiento de las piezas
+
 	MovementDelay := 0.0
 	moveCounter := 0
 	last := time.Now()
