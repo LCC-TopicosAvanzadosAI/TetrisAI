@@ -267,16 +267,22 @@ func (b *Board) RotatePiece() {
 func (b *Board) MovePiece(dir Movement) {
 	b.drawPiece(b.activePiece, Empty)
 
-	if dir == MoveToBottom {
-		for !b.checkCollision(b.activePiece, dir, nothing) {
-			b.activePiece.movePiece(dir, nothing)
-		}
+	if dir == MoveToBottom && !b.checkCollision(b.activePiece, MoveDown, nothing) {
+		b.activePiece.movePiece(MoveDown, nothing)
+
 	} else if !b.checkCollision(b.activePiece, nothing, dir) {
 		b.activePiece.movePiece(nothing, dir)
 	}
 
 	b.drawPiece(b.activePiece, b.activePiece.color)
+}
 
+func (b *Board) MoveToBottom1() {
+	b.drawPiece(b.activePiece, Empty)
+	for !b.checkCollision(b.activePiece, MoveDown, nothing) {
+		b.activePiece.movePiece(MoveDown, nothing)
+	}
+	b.drawPiece(b.activePiece, b.activePiece.color)
 }
 
 func (b *Board) Gravity() bool {
@@ -304,7 +310,7 @@ func (b *Board) AddPiece() {
 	//}
 	//baseShape := getShapeFromPiece(nextPiece)
 	//baseShape = moveShape(20, offset, baseShape)
-	b.nextPiece.movePiece(Movement(16), Movement(4))
+	b.nextPiece.movePiece(Movement(18), Movement(4))
 	b.activePiece = b.nextPiece
 	b.drawPiece(b.activePiece, b.activePiece.color)
 

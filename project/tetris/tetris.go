@@ -5,15 +5,11 @@ import (
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
-	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/colornames"
-	"golang.org/x/image/font"
 	_ "image/png"
-	"io/ioutil"
-	"os"
 
 	//gb "github.com/TetrisAI/project/gameboard"
-	//hp "github.com/TetrisAI/project/helper"
+	hp "github.com/TetrisAI/project/helper"
 	mn "github.com/TetrisAI/project/menu"
 )
 
@@ -41,7 +37,7 @@ func run() {
 	menu.DisplayMenu(win)
 	win.Clear(colornames.Black)
 
-	face, err := loadTTF("saarland.ttf", 52) //Loading font and size-font
+	face, err := hp.LoadTTF("./../../resources/saarland.ttf", 52) //Loading font and size-font
 	if err != nil {
 		panic(err)
 	}
@@ -82,28 +78,4 @@ func run() {
 			menu.Jugar(win)
 		}
 	}
-}
-
-//Necessary function to load fonts
-func loadTTF(path string, size float64) (font.Face, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	bytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	font, err := truetype.Parse(bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return truetype.NewFace(font, &truetype.Options{
-		Size:              size,
-		GlyphCacheEntries: 1,
-	}), nil
 }

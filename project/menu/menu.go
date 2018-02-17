@@ -2,7 +2,7 @@ package menu
 
 import (
 	"fmt"
-	//"github.com/faiface/pixel"
+	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
 	_ "image/png"
@@ -36,7 +36,10 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 
 	//Carga de imágen
 	blockGen, err := hp.LoadSpriteSheet("./../../resources/blocks.png", 2, 8)
-
+	if err != nil {
+		panic(err)
+	}
+	pic, err := hp.LoadPicture("./../../resources/marco.png")
 	if err != nil {
 		panic(err)
 	}
@@ -48,6 +51,9 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 	fmt.Println(gameBoard)
 
 	gameBoard.DisplayBoard(win, blockGen)
+
+	frame := pixel.NewSprite(pic, pic.Bounds())
+	frame.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
 	win.Clear(colornames.Black)
 
 	go func() {
@@ -56,7 +62,6 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 			gameBoard.Gravity()
 			win.Clear(colornames.Black)
 			gameBoard.DisplayBoard(win, blockGen)
-
 		}
 
 	}()
@@ -95,8 +100,20 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 		if win.JustPressed(pixelgl.KeyUp) {
 			gameBoard.RotatePiece()
 		}
-		if win.JustPressed(pixelgl.KeyDown) {
+    
+		if win.Pressed(pixelgl.KeyDown) && MovementDelay == 0 {
+
 			gameBoard.MovePiece(gb.MoveToBottom)
+			//gameBoard.MovePiece(gb.MoveDown)
+			if moveCounter > 0 {
+				MovementDelay = 0.1
+			} else {
+				MovementDelay = 0.5
+			}
+			moveCounter++
+		}
+		if win.JustPressed(pixelgl.KeySpace) {
+			gameBoard.MoveToBottom1()
 		}
 
 		if !win.Pressed(pixelgl.KeyRight) && !win.Pressed(pixelgl.KeyLeft) {
@@ -106,6 +123,8 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 
 		win.Update()
 		win.Clear(colornames.Black)
+
+		frame.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
 		gameBoard.DisplayBoard(win, blockGen)
 
 		//fmt.Println(gameBoard)
