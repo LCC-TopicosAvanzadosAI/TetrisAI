@@ -267,9 +267,12 @@ func (b *Board) RotatePiece() {
 func (b *Board) MovePiece(dir Movement) {
 	b.drawPiece(b.activePiece, Empty)
 
-	if dir == MoveToBottom && !b.checkCollision(b.activePiece, MoveDown, nothing) {
-		b.activePiece.movePiece(MoveDown, nothing)
-
+	if dir == MoveToBottom {
+		if !b.checkCollision(b.activePiece, MoveDown, nothing) {
+			b.activePiece.movePiece(MoveDown, nothing)
+		} else {
+			b.Gravity()
+		}
 	} else if !b.checkCollision(b.activePiece, nothing, dir) {
 		b.activePiece.movePiece(nothing, dir)
 	}
@@ -293,12 +296,46 @@ func (b *Board) Gravity() bool {
 		b.activePiece.movePiece(MoveDown, nothing)
 	} else { //If there are collision we don't move down the piece and we add a new piece
 		b.drawPiece(b.activePiece, b.activePiece.color)
+		b.checkRowCompletion()
 		b.AddPiece()
+
 		return true
 	}
 	//Draw the piece that we remove.
 	b.drawPiece(b.activePiece, b.activePiece.color)
 	return false
+}
+
+func (b *Board) checkRowCompletion() {
+	rowWasDeleted := true
+	var deleteRowCt int
+	for rowWasDeleted {
+		rowWasDeleted = false
+		for i := 0; i < 4; i++ {
+			r := b.activePiece.piece[i].row
+			emptyFound := false
+			for c := 0; c < 10; c++ {
+				if b.gameboard[r][c] == Empty {
+					emptyFound = true
+					continue
+				}
+			}
+			if !emptyFound {
+				b.deleteRow(r)
+				rowWasDeleted = true
+				deleteRowCt++
+			}
+		}
+	}
+
+}
+
+func (b *Board) deleteRow(row int) {
+	for r := row; r < 21; r++ {
+		for c := 0; c < 10; c++ {
+			b.gameboard[r][c] = b.gameboard[r+1][c]
+		}
+	}
 }
 
 func (b *Board) AddPiece() {
