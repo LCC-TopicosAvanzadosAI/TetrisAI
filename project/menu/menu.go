@@ -100,7 +100,9 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 		if win.JustPressed(pixelgl.KeyUp) {
 			gameBoard.RotatePiece()
 		}
+    
 		if win.Pressed(pixelgl.KeyDown) && MovementDelay == 0 {
+
 			gameBoard.MovePiece(gb.MoveToBottom)
 			//gameBoard.MovePiece(gb.MoveDown)
 			if moveCounter > 0 {
@@ -121,8 +123,10 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 
 		win.Update()
 		win.Clear(colornames.Black)
+
 		frame.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
 		gameBoard.DisplayBoard(win, blockGen)
+
 		//fmt.Println(gameBoard)
 	}
 
