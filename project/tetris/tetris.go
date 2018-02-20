@@ -43,7 +43,8 @@ func run() {
 	}
 
 	Atlas := text.NewAtlas(face, text.ASCII)                 //Atlas necessary for the font
-	basicTxt := text.New(pixel.V(windowWidth/2, 200), Atlas) //here, I put the coordinates where the texts starts to write
+	basicTxt := text.New(pixel.V(windowWidth/2, 200), Atlas) //here, I put the coordinates where the
+	//texts starts to write
 
 	basicTxt.LineHeight = Atlas.LineHeight() * 1.5 // line spacing between strings
 

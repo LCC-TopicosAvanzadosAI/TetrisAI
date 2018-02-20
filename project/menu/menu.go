@@ -34,11 +34,12 @@ func (m *Menu) DisplayMenu(win *pixelgl.Window) {
 
 func (m *Menu) Jugar(win *pixelgl.Window) {
 
-	//Carga de imágen
+	//Carga de imágen de la pieza
 	blockGen, err := hp.LoadSpriteSheet("./../../resources/blocks.png", 2, 8)
 	if err != nil {
 		panic(err)
 	}
+
 	pic, err := hp.LoadPicture("./../../resources/marco.png")
 	if err != nil {
 		panic(err)
@@ -61,9 +62,8 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 			time.Sleep(time.Second * 1)
 			gameBoard.Gravity()
 			win.Clear(colornames.Black)
-			gameBoard.DisplayBoard(win, blockGen)
+			//gameBoard.DisplayBoard(win, blockGen)
 		}
-
 	}()
 
 	//movimiento de las piezas
