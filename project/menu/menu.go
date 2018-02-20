@@ -2,11 +2,15 @@ package menu
 
 import (
 	"fmt"
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/speaker"
+
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
 	_ "image/png"
 	"math"
+	"os"
 	"time"
 
 	gb "github.com/TetrisAI/project/gameboard"
@@ -45,6 +49,14 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 		panic(err)
 	}
 
+	//tetris audio
+	f, _ := os.Open("./../../resources/korobeiniki.mp3")
+	s, format, _ := mp3.Decode(f)
+	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+
+	speaker.Play(s)
+	//s.Loop(-1, s)
+
 	gameBoard := gb.NewGameBoard()
 
 	gameBoard.AddPiece()
@@ -59,6 +71,7 @@ func (m *Menu) Jugar(win *pixelgl.Window) {
 
 	go func() {
 		for !win.Closed() {
+
 			time.Sleep(time.Second * 1)
 			gameBoard.Gravity()
 			win.Clear(colornames.Black)

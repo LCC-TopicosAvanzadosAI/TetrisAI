@@ -212,7 +212,6 @@ func (b *Board) FillArray() {
 		b.PieceArray[i] = dest[i]
 	}
 	b.nextPiece = b.PieceArray[0]
-
 }
 
 func (p *Piece) movePiece(rows, cols Movement) {
@@ -271,7 +270,6 @@ func (b *Board) RotatePiece() {
 	}
 
 	b.drawPiece(b.activePiece, b.activePiece.color)
-
 }
 
 func (b *Board) MovePiece(dir Movement) {
@@ -341,7 +339,6 @@ func (b *Board) checkRowCompletion() {
 				b.score += 100
 			}
 		}
-		fmt.Println(linesFound)
 		if linesFound == 4 {
 			b.score += 800
 			linesFound = 0
@@ -351,6 +348,7 @@ func (b *Board) checkRowCompletion() {
 }
 
 func (b *Board) deleteRow(row int) {
+
 	for r := row; r < 21; r++ {
 		for c := 0; c < 10; c++ {
 			b.gameboard[r][c] = b.gameboard[r+1][c]
@@ -404,7 +402,7 @@ func (b *Board) DisplayBoard(win *pixelgl.Window, blockGen func(int) pixel.Pictu
 
 			x := float64(col)*boardBlockSize + boardBlockSize/2
 			y := float64(row)*boardBlockSize + boardBlockSize/2
-			pic := blockGen(int(Gray) - 1)
+			pic := blockGen(int(b.activePiece.color) - 1)
 			sprite := pixel.NewSprite(pic, pic.Bounds())
 			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, scaleFactor).Moved(pixel.V(x+282, y+25)))
 		}
