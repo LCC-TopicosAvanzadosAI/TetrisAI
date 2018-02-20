@@ -2,9 +2,13 @@ package gameboard
 
 import (
 	"fmt"
+	hp "github.com/TetrisAI/project/helper"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/faiface/pixel/text"
+	"golang.org/x/image/colornames"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -171,12 +175,21 @@ type Board struct {
 	nextPiece   Piece
 	gameOver    bool
 	PieceArray  []Piece
+	score       int
+	Atlas       *text.Atlas
 }
 
 func NewGameBoard() Board {
 
+	face, err := hp.LoadTTF("./../../resources/saarland.ttf", 40) //Loading font and size-font
+	if err != nil {
+		panic(err)
+	}
+
 	board := Board{
 		gameOver: false,
+		score:    0,
+		Atlas:    text.NewAtlas(face, text.ASCII), //Atlas necessary for the font
 	}
 
 	board.FillArray()
@@ -231,9 +244,6 @@ func (p *Piece) Rotate() {
 		p.piece[i].row = pivot.row + (dCol * -1)
 		p.piece[i].col = pivot.col + (dRow)
 	}
-
-	fmt.Println("")
-
 }
 
 func (b *Board) RotatePiece() {
@@ -308,9 +318,12 @@ func (b *Board) Gravity() bool {
 
 func (b *Board) checkRowCompletion() {
 	rowWasDeleted := true
+	var linesFound int
 	var deleteRowCt int
+	linesFound = 0
 	for rowWasDeleted {
 		rowWasDeleted = false
+
 		for i := 0; i < 4; i++ {
 			r := b.activePiece.piece[i].row
 			emptyFound := false
@@ -324,7 +337,14 @@ func (b *Board) checkRowCompletion() {
 				b.deleteRow(r)
 				rowWasDeleted = true
 				deleteRowCt++
+				linesFound += 1
+				b.score += 100
 			}
+		}
+		fmt.Println(linesFound)
+		if linesFound == 4 {
+			b.score += 800
+			linesFound = 0
 		}
 	}
 
@@ -364,6 +384,16 @@ func (b *Board) DisplayBoard(win *pixelgl.Window, blockGen func(int) pixel.Pictu
 	pic := blockGen(0)
 	imgSize := pic.Bounds().Max.X
 	scaleFactor := float64(boardBlockSize) / float64(imgSize)
+
+	//description for the score
+	ScoreTxt := text.New(pixel.V(260, 307), b.Atlas) //here, I put the coordinates where the
+	ScoreTxt.Dot.X -= ScoreTxt.BoundsOf(strconv.Itoa(b.score)).W()
+	ScoreTxt.Color = colornames.Lightcyan //text color
+	fmt.Fprintln(ScoreTxt, b.score)
+	ScoreTxt.Draw(win, pixel.IM)
+
+	//display next piece
+	//b.drawPiece(b.nextPiece, b.nextPiece.color)
 
 	for col := 0; col < BoardCols; col++ {
 		for row := 0; row < BoardRows-2; row++ {
