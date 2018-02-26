@@ -66,7 +66,7 @@ func JPiece(c BlockColor) Piece {
 			Block{row: 0, col: 0},
 			Block{row: 0, col: 2},
 		},
-		color: c,
+		color: 3,
 		id:    IdJPiece,
 	}
 }
@@ -78,7 +78,7 @@ func LPiece(c BlockColor) Piece {
 			Block{row: 1, col: 2},
 			Block{row: 0, col: 0},
 		},
-		color: c,
+		color: 4,
 		id:    IdLPiece,
 	}
 }
@@ -90,7 +90,7 @@ func SPiece(c BlockColor) Piece {
 			Block{row: 1, col: 1},
 			Block{row: 1, col: 2},
 		},
-		color: c,
+		color: 5,
 		id:    IdSPiece,
 	}
 }
@@ -102,7 +102,7 @@ func IPiece(c BlockColor) Piece {
 			Block{row: 1, col: 2},
 			Block{row: 1, col: 3},
 		},
-		color: c,
+		color: 6,
 		id:    IdIPiece,
 	}
 }
@@ -114,7 +114,7 @@ func ZPiece(c BlockColor) Piece {
 			Block{row: 0, col: 1},
 			Block{row: 0, col: 2},
 		},
-		color: c,
+		color: 7,
 		id:    IdZPiece,
 	}
 }
@@ -126,7 +126,7 @@ func TPiece(c BlockColor) Piece {
 			Block{row: 1, col: 2},
 			Block{row: 0, col: 1},
 		},
-		color: c,
+		color: 8,
 		id:    IdTPiece,
 	}
 }
@@ -138,7 +138,7 @@ func OPiece(c BlockColor) Piece {
 			Block{row: 0, col: 0},
 			Block{row: 0, col: 1},
 		},
-		color: c,
+		color: 9,
 		id:    IdOPiece,
 	}
 }
@@ -177,9 +177,17 @@ type Board struct {
 	PieceArray  []Piece
 	score       int
 	Atlas       *text.Atlas
+	win         *pixelgl.Window
+	Batch       *pixel.Batch
+	//blocks       []*pixel.Sprite
+	//matrices     []pixel.Matrix
+	blocksFrames []pixel.Rect
+	BoardCols    int
+	BoardRows    int
+	spritesheet  pixel.Picture
 }
 
-func NewGameBoard() Board {
+func NewGameBoard(_win *pixelgl.Window, _batch *pixel.Batch, _blocksFrames []pixel.Rect, _spritesheet pixel.Picture) Board {
 
 	face, err := hp.LoadTTF("./../../resources/saarland.ttf", 40) //Loading font and size-font
 	if err != nil {
@@ -192,15 +200,23 @@ func NewGameBoard() Board {
 		Atlas:    text.NewAtlas(face, text.ASCII), //Atlas necessary for the font
 	}
 
+	board.win = _win
+	board.Batch = _batch
+	//board.blocks = _blocks
+	//board.matrices = _matrices
+	board.blocksFrames = _blocksFrames
+	board.spritesheet = _spritesheet
+	board.BoardCols = 10
+	board.BoardRows = 20
+
 	board.FillArray()
 
 	return board
 }
 
 func (b *Board) FillArray() {
-	b.PieceArray = append(b.PieceArray, JPiece(1), LPiece(2), SPiece(3),
-		TPiece(4), ZPiece(5), IPiece(6), OPiece(7))
-
+	b.PieceArray = append(b.PieceArray, JPiece(1), LPiece(2), SPiece(3), TPiece(4), ZPiece(5), IPiece(6), OPiece(7))
+	//b.PieceArray = append(b.PieceArray, OPiece(1), OPiece(1))
 	dest := make([]Piece, len(b.PieceArray))
 	rand.Seed(time.Now().Unix())
 	perm := rand.Perm(len(b.PieceArray))
@@ -252,6 +268,8 @@ func (b *Board) RotatePiece() {
 	}
 
 	b.drawPiece(b.activePiece, Empty)
+	b.patchActivePiece(Empty)
+
 	copy := b.activePiece
 	b.activePiece.Rotate()
 
@@ -265,15 +283,18 @@ func (b *Board) RotatePiece() {
 		} else {
 			b.activePiece = copy
 			b.drawPiece(b.activePiece, b.activePiece.color)
+			b.patchActivePiece(b.activePiece.color)
 			return
 		}
 	}
 
 	b.drawPiece(b.activePiece, b.activePiece.color)
+	b.patchActivePiece(b.activePiece.color)
 }
 
 func (b *Board) MovePiece(dir Movement) {
 	b.drawPiece(b.activePiece, Empty)
+	b.patchActivePiece(Empty)
 
 	if dir == MoveToBottom {
 		if !b.checkCollision(b.activePiece, MoveDown, nothing) {
@@ -286,32 +307,55 @@ func (b *Board) MovePiece(dir Movement) {
 	}
 
 	b.drawPiece(b.activePiece, b.activePiece.color)
+	b.patchActivePiece(b.activePiece.color)
 }
 
 func (b *Board) MoveToBottom1() {
 	b.drawPiece(b.activePiece, Empty)
+	b.patchActivePiece(Empty)
 	for !b.checkCollision(b.activePiece, MoveDown, nothing) {
 		b.activePiece.movePiece(MoveDown, nothing)
 	}
 	b.drawPiece(b.activePiece, b.activePiece.color)
+	b.patchActivePiece(b.activePiece.color)
+	b.Gravity()
 }
 
-func (b *Board) Gravity() bool {
-	//We remove the piece that we're trying to move down
+func (b *Board) Gravity() {
+
 	b.drawPiece(b.activePiece, Empty)
-	//If there are no collisions we move the piece down.
+	b.patchActivePiece(Empty)
+
 	if !b.checkCollision(b.activePiece, MoveDown, nothing) {
 		b.activePiece.movePiece(MoveDown, nothing)
-	} else { //If there are collision we don't move down the piece and we add a new piece
 		b.drawPiece(b.activePiece, b.activePiece.color)
+		b.patchActivePiece(b.activePiece.color)
+	} else {
+		b.drawPiece(b.activePiece, b.activePiece.color)
+		b.patchActivePiece(b.activePiece.color)
 		b.checkRowCompletion()
 		b.AddPiece()
-
-		return true
 	}
-	//Draw the piece that we remove.
-	b.drawPiece(b.activePiece, b.activePiece.color)
-	return false
+
+}
+
+func (b *Board) patchActivePiece(c BlockColor) {
+
+	boardBlockSize := 20.0 //win.Bounds().Max.X / 10
+	//pic := b.blocksFrames[0] //blockGen(0)
+	imgSize := 40 //pic.Bounds().Max.X
+	scaleFactor := float64(boardBlockSize) / float64(imgSize)
+
+	for i := 0; i < len(b.activePiece.piece); i++ {
+		x := float64(b.activePiece.piece[i].col)*boardBlockSize + boardBlockSize/2
+		y := float64(b.activePiece.piece[i].row)*boardBlockSize + boardBlockSize/2
+
+		block := pixel.NewSprite(b.spritesheet, b.blocksFrames[c])
+		//b.blocks = append(b.blocks, block)
+		block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, scaleFactor).Moved(pixel.V(x+282, y+25)))
+	}
+	b.Batch.Draw(b.win)
+	//b.win.Update()
 }
 
 func (b *Board) checkRowCompletion() {
@@ -345,6 +389,8 @@ func (b *Board) checkRowCompletion() {
 		}
 	}
 
+	b.updateScore()
+
 }
 
 func (b *Board) deleteRow(row int) {
@@ -354,89 +400,90 @@ func (b *Board) deleteRow(row int) {
 			b.gameboard[r][c] = b.gameboard[r+1][c]
 		}
 	}
+	b.UpdateBoard()
+}
+
+func (b *Board) UpdateBoard() {
+	//b.updateScore()
+	//b.win.Clear(colornames.Black)
+	b.Batch.Clear()
+	boardBlockSize := 20.0 //win.Bounds().Max.X / 10
+	imgSize := 40          //pic.Bounds().Max.X
+	scaleFactor := float64(boardBlockSize) / float64(imgSize)
+
+	for col := 0; col < b.BoardCols; col++ {
+		for row := 0; row < b.BoardRows-2; row++ {
+			val := b.gameboard[row][col]
+			//if val == Empty {
+			//	continue
+			//}
+			x := float64(col)*boardBlockSize + boardBlockSize/2
+			y := float64(row)*boardBlockSize + boardBlockSize/2
+
+			block := pixel.NewSprite(b.spritesheet, b.blocksFrames[val])
+			//b.blocks = append(b.blocks, block)
+			block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, scaleFactor).Moved(pixel.V(x+282, y+25)))
+		}
+	}
+	b.updateScore()
+	b.Batch.Draw(b.win)
+	b.win.Update()
+
+}
+
+func (b *Board) drawNextPiece(c BlockColor) {
+	boardBlockSize := 20.0
+	imgSize := 40 //pic.Bounds().Max.X
+	scaleFactor := float64(boardBlockSize) / float64(imgSize)
+
+	for i := 0; i < len(b.nextPiece.piece); i++ {
+		x := float64(b.nextPiece.piece[i].col)*boardBlockSize + boardBlockSize/2
+		y := float64(b.nextPiece.piece[i].row)*boardBlockSize + boardBlockSize/2
+
+		block := pixel.NewSprite(b.spritesheet, b.blocksFrames[c])
+		//b.blocks = append(b.blocks, block)
+		block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, scaleFactor).Moved(pixel.V(x+500, y+285)))
+	}
+
+	b.Batch.Draw(b.win)
+}
+
+func (b *Board) clearScore() {
+	//mmm i have no idea how to do this
+	block := pixel.NewSprite(b.spritesheet, b.blocksFrames[Empty])
+	block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, 2).Moved(pixel.V(200, 307)))
+}
+
+func (b *Board) updateScore() {
+	b.clearScore()
+	ScoreTxt := text.New(pixel.V(260, 307), b.Atlas) //here, I put the coordinates where the
+	ScoreTxt.Dot.X -= ScoreTxt.BoundsOf(strconv.Itoa(b.score)).W()
+	ScoreTxt.Color = colornames.Lightcyan //text color
+	fmt.Fprint(ScoreTxt, b.score)
+	ScoreTxt.Draw(b.win, pixel.IM)
+
 }
 
 func (b *Board) AddPiece() {
-	/*if p.Id == IdIPiece {
-		offset = rand.Intn(7)
-	} else if p.Id == OPiece {
-		offset = rand.Intn(9)
-	} else {*/
-	//}
-	//baseShape := getShapeFromPiece(nextPiece)
-	//baseShape = moveShape(20, offset, baseShape)
+	b.drawNextPiece(Empty)
 	b.nextPiece.movePiece(Movement(18), Movement(4))
 	b.activePiece = b.nextPiece
-	b.drawPiece(b.activePiece, b.activePiece.color)
 
+	b.drawPiece(b.activePiece, b.activePiece.color)
+	b.patchActivePiece(b.activePiece.color)
 	//remove a piece or refill the PieceArray
 	b.PieceArray = append(b.PieceArray[:0], b.PieceArray[1:]...) //remove a piece of PieceArray
 	if len(b.PieceArray) <= 0 {
 		b.FillArray()
 	}
 	b.nextPiece = b.PieceArray[0]
-}
+	b.drawNextPiece(b.nextPiece.color)
 
-func (b *Board) DisplayBoard(win *pixelgl.Window, blockGen func(int) pixel.Picture) {
-	boardBlockSize := 20.0 //win.Bounds().Max.X / 10
-	pic := blockGen(0)
-	imgSize := pic.Bounds().Max.X
-	scaleFactor := float64(boardBlockSize) / float64(imgSize)
-
-	//description for the score
-	ScoreTxt := text.New(pixel.V(260, 307), b.Atlas) //here, I put the coordinates where the
-	ScoreTxt.Dot.X -= ScoreTxt.BoundsOf(strconv.Itoa(b.score)).W()
-	ScoreTxt.Color = colornames.Lightcyan //text color
-	fmt.Fprintln(ScoreTxt, b.score)
-	ScoreTxt.Draw(win, pixel.IM)
-
-	//display next piece
-	//b.drawPiece(b.nextPiece, b.nextPiece.color)
-
-	for col := 0; col < BoardCols; col++ {
-		for row := 0; row < BoardRows-2; row++ {
-			val := b.gameboard[row][col]
-			if val == Empty {
-				continue
-			}
-
-			x := float64(col)*boardBlockSize + boardBlockSize/2
-			y := float64(row)*boardBlockSize + boardBlockSize/2
-			pic := blockGen(int(b.activePiece.color) - 1)
-			sprite := pixel.NewSprite(pic, pic.Bounds())
-			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, scaleFactor).Moved(pixel.V(x+282, y+25)))
-		}
-	}
-
-	/*// Display Shadow
-	pieceType := activePiece.color
-	ghostShape := activeShape
-	b.drawPiece(activeShape, Empty)
-	for {
-		if b.checkCollision(moveShapeDown(ghostShape)) {
-			break
-		}
-		ghostShape = moveShapeDown(ghostShape)
-	}
-	b.drawPiece(activeShape, pieceType)
-
-	gpic := blockGen(block2spriteIdx(Gray))
-	sprite := pixel.NewSprite(gpic, gpic.Bounds())
-	for i := 0; i < 4; i++ {
-		if b[ghostShape[i].row][ghostShape[i].col] == Empty {
-			x := float64(ghostShape[i].col)*boardBlockSize + boardBlockSize/2
-			y := float64(ghostShape[i].row)*boardBlockSize + boardBlockSize/2
-			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, scaleFactor/2).Moved(pixel.V(x+282, y+25)))
-		}
-	}
-	*/
+	//b.DisplayBoard()
 }
 
 func (b *Board) drawPiece(p Piece, c BlockColor) {
-	//fmt.Println("c:: ", c)
 	for i := 0; i < 4; i++ {
-		//	b[activeShape[i].row][activeShape[i].col] = t
-		//b[p.piece[p.position][i].row][p.piece[p.position][i].col] = p.color
 		b.gameboard[p.piece[i].row][p.piece[i].col] = c
 	}
 }

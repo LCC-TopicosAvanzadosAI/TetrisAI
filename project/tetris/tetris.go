@@ -1,82 +1,116 @@
-package main
+package tetris
 
 import (
 	"fmt"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
-	"github.com/faiface/pixel/text"
 	"golang.org/x/image/colornames"
 	_ "image/png"
-
-	//gb "github.com/TetrisAI/project/gameboard"
+	//"math"
+	gb "github.com/TetrisAI/project/gameboard"
 	hp "github.com/TetrisAI/project/helper"
-	mn "github.com/TetrisAI/project/menu"
+	"math"
+	"time"
 )
 
-func main() {
-	pixelgl.Run(run) //para correr la wea gráfica
+func LoadResources() (*pixel.Batch, []pixel.Rect, pixel.Picture, pixel.Picture) {
+	spritesheet, _ := hp.LoadPicture("./../../resources/blocks.png")
+	batch := pixel.NewBatch(&pixel.TrianglesData{}, spritesheet)
+	blocksFrames := hp.NewBlockFrame(spritesheet)
+	background, _ := hp.LoadPicture("./../../resources/marco.png")
+
+	return batch, blocksFrames, spritesheet, background
+
 }
 
-func run() {
-	//Window creation
-	windowWidth := 765.0
-	windowHeight := 450.0
-	cfg := pixelgl.WindowConfig{
-		Title:  "Tetris Menu",
-		Bounds: pixel.R(0, 0, windowWidth, windowHeight),
-		VSync:  true,
-	}
+func Play(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 
-	win, err := pixelgl.NewWindow(cfg)
-	if err != nil {
-		panic(err)
-	}
+	frames := 0
+	second := time.Tick(time.Second)
+	batch, blocksFrames, spritesheet, background := LoadResources()
+	gameBoard := gb.NewGameBoard(win, batch, blocksFrames, spritesheet)
 
-	menu := mn.NewMenu()
-	//fmt.Println(menu)
-	menu.DisplayMenu(win)
 	win.Clear(colornames.Black)
+	gameBoard.UpdateBoard()
 
-	face, err := hp.LoadTTF("./../../resources/saarland.ttf", 52) //Loading font and size-font
-	if err != nil {
-		panic(err)
-	}
+	gameBoard.AddPiece()
 
-	Atlas := text.NewAtlas(face, text.ASCII)                 //Atlas necessary for the font
-	basicTxt := text.New(pixel.V(windowWidth/2, 200), Atlas) //here, I put the coordinates where the
-	//texts starts to write
+	MovementDelay := 0.0
+	moveCounter := 0
+	last := time.Now()
 
-	basicTxt.LineHeight = Atlas.LineHeight() * 1.5 // line spacing between strings
+	var gravityTimer float64
+	//var baseSpeed float64 = 0.8
+	var gravitySpeed float64 = 1.0
 
-	txt := "Jugar"
-	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2 //centralize text
-	basicTxt.Color = colornames.Aqua                 //text color
-	fmt.Fprintln(basicTxt, txt)                      //put the text in the window
-	rectJugar := pixel.Rect(basicTxt.Bounds())       //creation a rectangle around the text
+	frame := pixel.NewSprite(background, background.Bounds())
+	frame.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
 
-	txt = "Aprender"
-	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
-	basicTxt.Color = colornames.Green
-	fmt.Fprintln(basicTxt, txt)
-	//rectAprender := pixel.Rect(basicTxt.Bounds())
-
-	txt = "Cerrar"
-	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
-	basicTxt.Color = colornames.Blue
-	fmt.Fprintln(basicTxt, txt)
-	//rectCerrar := pixel.Rect(basicTxt.Bounds())
-
-	//fmt.Println("cords jugar: ", rectJugar.Min.X, " ", rectJugar.Min.Y, " ", rectJugar.Max.X, " ", rectJugar.Max.Y)
 	for !win.Closed() {
-		win.Clear(colornames.Black)
-		basicTxt.Draw(win, pixel.IM)
-		win.Update()
+		dt := time.Since(last).Seconds()
+		last = time.Now()
 
-		menu.DisplayMenu(win)
-		//fmt.Println(win.MousePosition().X, " ", win.MousePosition().Y)
+		gravityTimer += dt
 
-		if (rectJugar.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft)) || win.Pressed(pixelgl.KeyEnter) {
-			menu.Jugar(win)
+		if gravityTimer > gravitySpeed && !win.Pressed(pixelgl.KeyDown) {
+			gravityTimer -= gravitySpeed
+			gameBoard.Gravity()
 		}
+
+		if MovementDelay > 0.0 {
+			MovementDelay = math.Max(MovementDelay-dt, 0.0)
+		}
+
+		if win.Pressed(pixelgl.KeyRight) && MovementDelay == 0 {
+			gameBoard.MovePiece(gb.MoveRight)
+			if moveCounter > 0 {
+				MovementDelay = 0.1
+			} else {
+				MovementDelay = 0.5
+			}
+			moveCounter++
+		}
+		if win.Pressed(pixelgl.KeyLeft) && MovementDelay == 0 {
+			gameBoard.MovePiece(gb.MoveLeft)
+			if moveCounter > 0 {
+				MovementDelay = 0.1
+			} else {
+				MovementDelay = 0.5
+			}
+			moveCounter++
+		}
+		if win.JustPressed(pixelgl.KeyUp) {
+			gameBoard.RotatePiece()
+		}
+
+		if win.Pressed(pixelgl.KeyDown) && MovementDelay == 0 {
+
+			gameBoard.MovePiece(gb.MoveToBottom)
+			if moveCounter > 0 {
+				MovementDelay = 0.7
+			} else {
+				MovementDelay = 2.0
+			}
+			moveCounter++
+		}
+		if win.JustPressed(pixelgl.KeySpace) {
+			gameBoard.MoveToBottom1()
+		}
+
+		if !win.Pressed(pixelgl.KeyRight) && !win.Pressed(pixelgl.KeyLeft) {
+			moveCounter = 0
+			MovementDelay = 0.0
+		}
+
+		frames++
+		select {
+		case <-second:
+			win.SetTitle(fmt.Sprintf("%s | FPS: %d", cfg.Title, frames))
+			frames = 0
+		default:
+		}
+		frame.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
+		win.Update()
 	}
+
 }

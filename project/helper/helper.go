@@ -11,6 +11,17 @@ import (
 	"os"
 )
 
+func NewBlockFrame(spritesheet pixel.Picture) []pixel.Rect {
+
+	var blocksFrames []pixel.Rect
+	for x := spritesheet.Bounds().Min.X; x < spritesheet.Bounds().Max.X; x += 40 {
+		for y := spritesheet.Bounds().Min.Y; y < spritesheet.Bounds().Max.Y; y += 40 {
+			blocksFrames = append(blocksFrames, pixel.R(x, y, x+40, y+40))
+		}
+	}
+	return blocksFrames
+}
+
 func LoadPicture(path string) (pixel.Picture, error) {
 	file, err := os.Open(path)
 	if err != nil {
