@@ -29,32 +29,31 @@ func DisplayMenu(win *pixelgl.Window, windowWidth, windowHeight float64) string 
 
 	basicTxt.LineHeight = Atlas.LineHeight() * 1.5 // line spacing between strings
 
-	txt := "Jugar"
-	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2 //centralize text
-	basicTxt.Color = colornames.Aqua                 //text color
-	fmt.Fprintln(basicTxt, txt)                      //put the text in the window
-	rectJugar := pixel.Rect(basicTxt.Bounds())       //creation a rectangle around the text
-
-	txt = "Aprender"
-	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
-	basicTxt.Color = colornames.Green
-	fmt.Fprintln(basicTxt, txt)
-	//rectAprender := pixel.Rect(basicTxt.Bounds())
-
-	txt = "Cerrar"
-	basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
-	basicTxt.Color = colornames.Green
-	fmt.Fprintln(basicTxt, txt)
-
 	rectQuit := pixel.Rect(basicTxt.Bounds())
 
 	for !win.Closed() {
+		txt := "Jugar"
+		basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2 //centralize text
+		basicTxt.Color = colornames.Aqua                 //text color
+		fmt.Fprintln(basicTxt, txt)                      //put the text in the window
+		rectJugar := pixel.Rect(basicTxt.Bounds())       //creation a rectangle around the text
+
+		txt = "Aprender"
+		basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
+		basicTxt.Color = colornames.Green
+		fmt.Fprintln(basicTxt, txt)
+		//rectAprender := pixel.Rect(basicTxt.Bounds())
+
+		txt = "Cerrar"
+		basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
+		basicTxt.Color = colornames.Royalblue
+		fmt.Fprintln(basicTxt, txt)
 		win.Clear(colornames.Black)
 		basicTxt.Draw(win, pixel.IM)
 		win.Update()
 		if (rectJugar.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft)) || win.Pressed(pixelgl.KeyEnter) {
 			return "Play"
-		} else if (rectQuit.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft)) || win.Pressed(pixelgl.KeySpace) {
+		} else if (rectQuit.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft)) || win.Pressed(pixelgl.KeyEscape) {
 			return "Quit"
 		}
 	}

@@ -10,8 +10,17 @@ import (
 	"github.com/TetrisAI/project/tetris"
 )
 
+var condicion = "gurrola"
+
 func main() {
-	pixelgl.Run(run) //para correr la wea gráfica
+	for {
+		pixelgl.Run(run) //para run la wea gráfica
+		if condicion != "quit" {
+			break
+		}
+		condicion = "fran"
+	}
+
 }
 
 func run() {
@@ -35,7 +44,15 @@ func run() {
 	switch mn.DisplayMenu(win, windowWidth, windowHeight) {
 	case "Play":
 		sound.Play()
-		tetris.Play(win, cfg)
-	}
+		for {
+			opcion := tetris.Play(win, cfg)
+			if opcion == "quit" {
+				sound.Stop()
+				condicion = "quit"
+				break
+			}
+			sound.Play()
 
+		}
+	}
 }

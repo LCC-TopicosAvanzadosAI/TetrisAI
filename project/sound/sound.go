@@ -18,3 +18,10 @@ func Play() {
 	//s.Loop(-1, s)
 
 }
+
+func Stop() {
+	f, _ := os.Open("./../../resources/pum.mp3")
+	s, format, _ := mp3.Decode(f)
+	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+	speaker.Play(s)
+}

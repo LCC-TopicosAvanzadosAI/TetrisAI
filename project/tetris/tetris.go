@@ -23,7 +23,7 @@ func LoadResources() (*pixel.Batch, []pixel.Rect, pixel.Picture, pixel.Picture) 
 
 }
 
-func Play(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
+func Play(win *pixelgl.Window, cfg pixelgl.WindowConfig) string {
 
 	frames := 0
 	second := time.Tick(time.Second)
@@ -31,8 +31,9 @@ func Play(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 	gameBoard := gb.NewGameBoard(win, batch, blocksFrames, spritesheet)
 
 	win.Clear(colornames.Black)
-	gameBoard.UpdateBoard()
 
+	gameBoard.UpdateScore()
+	gameBoard.UpdateBoard()
 	gameBoard.AddPiece()
 
 	MovementDelay := 0.0
@@ -54,7 +55,10 @@ func Play(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 
 		if gravityTimer > gravitySpeed && !win.Pressed(pixelgl.KeyDown) {
 			gravityTimer -= gravitySpeed
-			gameBoard.Gravity()
+			quit := gameBoard.Gravity()
+			if quit == "quit" {
+				return "quit"
+			}
 		}
 
 		if MovementDelay > 0.0 {
@@ -85,21 +89,32 @@ func Play(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 
 		if win.Pressed(pixelgl.KeyDown) && MovementDelay == 0 {
 
-			gameBoard.MovePiece(gb.MoveToBottom)
+			quit := gameBoard.MovePiece(gb.MoveToBottom)
+			if quit == "quit" {
+				return "quit"
+			}
 			if moveCounter > 0 {
-				MovementDelay = 0.7
+				MovementDelay = 0.05
 			} else {
-				MovementDelay = 2.0
+				MovementDelay = 0.1
 			}
 			moveCounter++
 		}
 		if win.JustPressed(pixelgl.KeySpace) {
-			gameBoard.MoveToBottom1()
+			quit := gameBoard.MoveToBottom1()
+			if quit == "quit" {
+				return "quit"
+			}
 		}
 
-		if !win.Pressed(pixelgl.KeyRight) && !win.Pressed(pixelgl.KeyLeft) {
+		if !win.Pressed(pixelgl.KeyRight) && !win.Pressed(pixelgl.KeyLeft) && !win.Pressed(pixelgl.KeyDown) {
 			moveCounter = 0
 			MovementDelay = 0.0
+		}
+
+		if win.Pressed(pixelgl.KeyR) {
+			return "r"
+
 		}
 
 		frames++
@@ -112,5 +127,6 @@ func Play(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 		frame.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
 		win.Update()
 	}
+	return "quit"
 
 }

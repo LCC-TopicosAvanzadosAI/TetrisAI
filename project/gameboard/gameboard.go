@@ -66,7 +66,7 @@ func JPiece(c BlockColor) Piece {
 			Block{row: 0, col: 0},
 			Block{row: 0, col: 2},
 		},
-		color: 3,
+		color: 5,
 		id:    IdJPiece,
 	}
 }
@@ -78,7 +78,7 @@ func LPiece(c BlockColor) Piece {
 			Block{row: 1, col: 2},
 			Block{row: 0, col: 0},
 		},
-		color: 4,
+		color: 13,
 		id:    IdLPiece,
 	}
 }
@@ -90,7 +90,7 @@ func SPiece(c BlockColor) Piece {
 			Block{row: 1, col: 1},
 			Block{row: 1, col: 2},
 		},
-		color: 5,
+		color: 15,
 		id:    IdSPiece,
 	}
 }
@@ -102,7 +102,7 @@ func IPiece(c BlockColor) Piece {
 			Block{row: 1, col: 2},
 			Block{row: 1, col: 3},
 		},
-		color: 6,
+		color: 3,
 		id:    IdIPiece,
 	}
 }
@@ -114,7 +114,7 @@ func ZPiece(c BlockColor) Piece {
 			Block{row: 0, col: 1},
 			Block{row: 0, col: 2},
 		},
-		color: 7,
+		color: 11,
 		id:    IdZPiece,
 	}
 }
@@ -126,7 +126,7 @@ func TPiece(c BlockColor) Piece {
 			Block{row: 1, col: 2},
 			Block{row: 0, col: 1},
 		},
-		color: 8,
+		color: 9,
 		id:    IdTPiece,
 	}
 }
@@ -138,7 +138,7 @@ func OPiece(c BlockColor) Piece {
 			Block{row: 0, col: 0},
 			Block{row: 0, col: 1},
 		},
-		color: 9,
+		color: 7,
 		id:    IdOPiece,
 	}
 }
@@ -176,7 +176,7 @@ type Board struct {
 	gameOver    bool
 	PieceArray  []Piece
 	score       int
-	Atlas       *text.Atlas
+	ScoreTxt    *text.Text
 	win         *pixelgl.Window
 	Batch       *pixel.Batch
 	//blocks       []*pixel.Sprite
@@ -197,7 +197,6 @@ func NewGameBoard(_win *pixelgl.Window, _batch *pixel.Batch, _blocksFrames []pix
 	board := Board{
 		gameOver: false,
 		score:    0,
-		Atlas:    text.NewAtlas(face, text.ASCII), //Atlas necessary for the font
 	}
 
 	board.win = _win
@@ -210,6 +209,13 @@ func NewGameBoard(_win *pixelgl.Window, _batch *pixel.Batch, _blocksFrames []pix
 	board.BoardRows = 20
 
 	board.FillArray()
+
+	Atlas := text.NewAtlas(face, text.ASCII)            //Atlas necessary for the font
+	board.ScoreTxt = text.New(pixel.V(200, 307), Atlas) //here, I put the coordinates where the
+	board.ScoreTxt.Dot.X -= board.ScoreTxt.BoundsOf(strconv.Itoa(board.score)).W()
+	board.ScoreTxt.Color = colornames.Lightcyan //text color
+	fmt.Fprint(board.ScoreTxt, board.score)
+	board.ScoreTxt.Draw(board.win, pixel.IM)
 
 	return board
 }
@@ -292,7 +298,7 @@ func (b *Board) RotatePiece() {
 	b.patchActivePiece(b.activePiece.color)
 }
 
-func (b *Board) MovePiece(dir Movement) {
+func (b *Board) MovePiece(dir Movement) string {
 	b.drawPiece(b.activePiece, Empty)
 	b.patchActivePiece(Empty)
 
@@ -300,7 +306,7 @@ func (b *Board) MovePiece(dir Movement) {
 		if !b.checkCollision(b.activePiece, MoveDown, nothing) {
 			b.activePiece.movePiece(MoveDown, nothing)
 		} else {
-			b.Gravity()
+			return b.Gravity()
 		}
 	} else if !b.checkCollision(b.activePiece, nothing, dir) {
 		b.activePiece.movePiece(nothing, dir)
@@ -308,9 +314,10 @@ func (b *Board) MovePiece(dir Movement) {
 
 	b.drawPiece(b.activePiece, b.activePiece.color)
 	b.patchActivePiece(b.activePiece.color)
+	return ""
 }
 
-func (b *Board) MoveToBottom1() {
+func (b *Board) MoveToBottom1() string {
 	b.drawPiece(b.activePiece, Empty)
 	b.patchActivePiece(Empty)
 	for !b.checkCollision(b.activePiece, MoveDown, nothing) {
@@ -318,10 +325,10 @@ func (b *Board) MoveToBottom1() {
 	}
 	b.drawPiece(b.activePiece, b.activePiece.color)
 	b.patchActivePiece(b.activePiece.color)
-	b.Gravity()
+	return b.Gravity()
 }
 
-func (b *Board) Gravity() {
+func (b *Board) Gravity() string {
 
 	b.drawPiece(b.activePiece, Empty)
 	b.patchActivePiece(Empty)
@@ -334,9 +341,10 @@ func (b *Board) Gravity() {
 		b.drawPiece(b.activePiece, b.activePiece.color)
 		b.patchActivePiece(b.activePiece.color)
 		b.checkRowCompletion()
-		b.AddPiece()
-	}
 
+		return b.AddPiece()
+	}
+	return ""
 }
 
 func (b *Board) patchActivePiece(c BlockColor) {
@@ -381,15 +389,15 @@ func (b *Board) checkRowCompletion() {
 				deleteRowCt++
 				linesFound += 1
 				b.score += 100
+				b.UpdateScore()
 			}
 		}
 		if linesFound == 4 {
 			b.score += 800
+			b.UpdateScore()
 			linesFound = 0
 		}
 	}
-
-	b.updateScore()
 
 }
 
@@ -414,9 +422,9 @@ func (b *Board) UpdateBoard() {
 	for col := 0; col < b.BoardCols; col++ {
 		for row := 0; row < b.BoardRows-2; row++ {
 			val := b.gameboard[row][col]
-			//if val == Empty {
-			//	continue
-			//}
+			if val == Empty {
+				continue
+			}
 			x := float64(col)*boardBlockSize + boardBlockSize/2
 			y := float64(row)*boardBlockSize + boardBlockSize/2
 
@@ -425,7 +433,6 @@ func (b *Board) UpdateBoard() {
 			block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, scaleFactor).Moved(pixel.V(x+282, y+25)))
 		}
 	}
-	b.updateScore()
 	b.Batch.Draw(b.win)
 	b.win.Update()
 
@@ -448,26 +455,27 @@ func (b *Board) drawNextPiece(c BlockColor) {
 	b.Batch.Draw(b.win)
 }
 
-func (b *Board) clearScore() {
+/*func (b *Board) clearScore() {
 	//mmm i have no idea how to do this
 	block := pixel.NewSprite(b.spritesheet, b.blocksFrames[Empty])
 	block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, 2).Moved(pixel.V(200, 307)))
+}*/
+
+func (b *Board) UpdateScore() {
+	b.win.Clear(colornames.Black)
+	b.ScoreTxt.Clear()
+	fmt.Fprint(b.ScoreTxt, b.score)
+	b.ScoreTxt.Draw(b.win, pixel.IM)
 }
 
-func (b *Board) updateScore() {
-	b.clearScore()
-	ScoreTxt := text.New(pixel.V(260, 307), b.Atlas) //here, I put the coordinates where the
-	ScoreTxt.Dot.X -= ScoreTxt.BoundsOf(strconv.Itoa(b.score)).W()
-	ScoreTxt.Color = colornames.Lightcyan //text color
-	fmt.Fprint(ScoreTxt, b.score)
-	ScoreTxt.Draw(b.win, pixel.IM)
-
-}
-
-func (b *Board) AddPiece() {
+func (b *Board) AddPiece() string {
 	b.drawNextPiece(Empty)
 	b.nextPiece.movePiece(Movement(18), Movement(4))
 	b.activePiece = b.nextPiece
+
+	if b.checkCollision(b.activePiece, 0, 0) {
+		return "quit"
+	}
 
 	b.drawPiece(b.activePiece, b.activePiece.color)
 	b.patchActivePiece(b.activePiece.color)
@@ -479,6 +487,7 @@ func (b *Board) AddPiece() {
 	b.nextPiece = b.PieceArray[0]
 	b.drawNextPiece(b.nextPiece.color)
 
+	return ""
 	//b.DisplayBoard()
 }
 
