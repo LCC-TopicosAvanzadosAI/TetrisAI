@@ -9,7 +9,7 @@ import (
 	//"math"
 	gb "github.com/TetrisAI/project/gameboard"
 	hp "github.com/TetrisAI/project/helper"
-	"math"
+	_ "math"
 	"time"
 )
 
@@ -23,110 +23,107 @@ func LoadResources() (*pixel.Batch, []pixel.Rect, pixel.Picture, pixel.Picture) 
 
 }
 
-func Play(win *pixelgl.Window, cfg pixelgl.WindowConfig) string {
+type BlockColor int
+
+type Tetris struct {
+	game_board   gb.Board
+	win          *pixelgl.Window
+	cfg          pixelgl.WindowConfig
+	batch        *pixel.Batch
+	blocksFrames []pixel.Rect
+	spritesheet  pixel.Picture
+	background   pixel.Picture
+	game_over    bool
+	last_time    time.Time
+	last_action  string
+}
+
+func (t *Tetris) New(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
+	t.win = win
+	t.cfg = cfg
+	t.batch, t.blocksFrames, t.spritesheet, t.background = LoadResources()
+	t.game_board = gb.NewGameBoard(t.win, t.batch, t.blocksFrames, t.spritesheet)
+	t.game_over = false
+	t.last_time = time.Now()
+}
+
+func (t *Tetris) Display() {
+
+	t.win.Clear(colornames.Black)
 
 	frames := 0
 	second := time.Tick(time.Second)
-	batch, blocksFrames, spritesheet, background := LoadResources()
-	gameBoard := gb.NewGameBoard(win, batch, blocksFrames, spritesheet)
 
-	win.Clear(colornames.Black)
+	frame := pixel.NewSprite(t.background, t.background.Bounds())
+	frame.Draw(t.win, pixel.IM.Moved(t.win.Bounds().Center()))
 
-	gameBoard.UpdateScore()
-	gameBoard.UpdateBoard()
-	gameBoard.AddPiece()
+	//last := time.Now()
 
-	MovementDelay := 0.0
-	moveCounter := 0
-	last := time.Now()
-
-	var gravityTimer float64
-	//var baseSpeed float64 = 0.8
-	var gravitySpeed float64 = 1.0
-
-	frame := pixel.NewSprite(background, background.Bounds())
-	frame.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
-
-	for !win.Closed() {
-		dt := time.Since(last).Seconds()
-		last = time.Now()
-
-		gravityTimer += dt
-
-		if gravityTimer > gravitySpeed && !win.Pressed(pixelgl.KeyDown) {
-			gravityTimer -= gravitySpeed
-			quit := gameBoard.Gravity()
-			if quit == "quit" {
-				return "quit"
-			}
-		}
-
-		if MovementDelay > 0.0 {
-			MovementDelay = math.Max(MovementDelay-dt, 0.0)
-		}
-
-		if win.Pressed(pixelgl.KeyRight) && MovementDelay == 0 {
-			gameBoard.MovePiece(gb.MoveRight)
-			if moveCounter > 0 {
-				MovementDelay = 0.1
-			} else {
-				MovementDelay = 0.5
-			}
-			moveCounter++
-		}
-		if win.Pressed(pixelgl.KeyLeft) && MovementDelay == 0 {
-			gameBoard.MovePiece(gb.MoveLeft)
-			if moveCounter > 0 {
-				MovementDelay = 0.1
-			} else {
-				MovementDelay = 0.5
-			}
-			moveCounter++
-		}
-		if win.JustPressed(pixelgl.KeyUp) {
-			gameBoard.RotatePiece()
-		}
-
-		if win.Pressed(pixelgl.KeyDown) && MovementDelay == 0 {
-
-			quit := gameBoard.MovePiece(gb.MoveToBottom)
-			if quit == "quit" {
-				return "quit"
-			}
-			if moveCounter > 0 {
-				MovementDelay = 0.05
-			} else {
-				MovementDelay = 0.1
-			}
-			moveCounter++
-		}
-		if win.JustPressed(pixelgl.KeySpace) {
-			quit := gameBoard.MoveToBottom1()
-			if quit == "quit" {
-				return "quit"
-			}
-		}
-
-		if !win.Pressed(pixelgl.KeyRight) && !win.Pressed(pixelgl.KeyLeft) && !win.Pressed(pixelgl.KeyDown) {
-			moveCounter = 0
-			MovementDelay = 0.0
-		}
-
-		if win.Pressed(pixelgl.KeyR) {
-			return "r"
-
-		}
-
+	for !t.win.Closed() {
 		frames++
 		select {
 		case <-second:
-			win.SetTitle(fmt.Sprintf("%s | FPS: %d", cfg.Title, frames))
+			t.win.SetTitle(fmt.Sprintf("%s | FPS: %d", t.cfg.Title, frames))
 			frames = 0
-		default:
 		}
-		frame.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
-		win.Update()
+		t.game_board.Mutex.Lock()
+		frame.Draw(t.win, pixel.IM.Moved(t.win.Bounds().Center()))
+		t.win.Update()
+		t.game_board.Mutex.Unlock()
+
+	}
+	t.game_board.Game_over = true
+}
+
+func (t *Tetris) Play() string {
+
+	go t.Display()
+	go t.game_board.Start()
+
+	for !t.game_board.Game_over {
+		action := t.Get_action_player()
+		t.Take_action(action)
 	}
 	return "quit"
+}
 
+func (t *Tetris) Take_action(action string) {
+	if time.Since(t.last_time).Seconds() < 0.3 && t.last_action == action {
+		return
+	}
+	t.last_time = time.Now()
+	t.last_action = action
+	t.game_board.Mutex.Lock()
+	switch action {
+	case "KeyDown":
+		t.game_board.Gravity()
+	case "KeyRight":
+		t.game_board.MovePiece(gb.MoveRight)
+	case "KeyLeft":
+		t.game_board.MovePiece(gb.MoveLeft)
+	case "KeyUp":
+		t.game_board.RotatePiece()
+	case "KeySpace":
+		t.game_board.MoveToBottom1()
+	}
+	t.game_board.Mutex.Unlock()
+}
+
+func (t *Tetris) Get_action_player() string {
+	if t.win.Pressed(pixelgl.KeyDown) {
+		return "KeyDown"
+	}
+	if t.win.Pressed(pixelgl.KeyRight) {
+		return "KeyRight"
+	}
+	if t.win.Pressed(pixelgl.KeyLeft) {
+		return "KeyLeft"
+	}
+	if t.win.Pressed(pixelgl.KeyUp) {
+		return "KeyUp"
+	}
+	if t.win.Pressed(pixelgl.KeySpace) {
+		return "KeySpace"
+	}
+	return "wea"
 }

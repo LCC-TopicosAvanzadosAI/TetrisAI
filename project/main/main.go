@@ -43,9 +43,11 @@ func run() {
 
 	switch mn.DisplayMenu(win, windowWidth, windowHeight) {
 	case "Play":
+		tetris := tetris.Tetris{}
+		tetris.New(win, cfg)
 		sound.Play()
 		for {
-			opcion := tetris.Play(win, cfg)
+			opcion := tetris.Play()
 			if opcion == "quit" {
 				sound.Stop()
 				condicion = "quit"

@@ -9,6 +9,7 @@ import (
 	"golang.org/x/image/colornames"
 	"math/rand"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -185,6 +186,29 @@ type Board struct {
 	BoardCols    int
 	BoardRows    int
 	spritesheet  pixel.Picture
+	Game_over    bool
+	time_gravity int
+	Mutex        *sync.Mutex
+}
+
+func (b *Board) Start() {
+	for !b.Game_over {
+		b.time_gravity++
+		if b.time_gravity > 10 {
+
+			b.time_gravity = 0
+
+			b.Mutex.Lock()
+			b.Gravity()
+			b.Mutex.Unlock()
+
+		}
+		//fmt.Println("nani")
+		//aumenta un numero
+		//if numero > 1000
+		// gravity(), numero = 0
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func NewGameBoard(_win *pixelgl.Window, _batch *pixel.Batch, _blocksFrames []pixel.Rect, _spritesheet pixel.Picture) Board {
@@ -198,7 +222,11 @@ func NewGameBoard(_win *pixelgl.Window, _batch *pixel.Batch, _blocksFrames []pix
 		gameOver: false,
 		score:    0,
 	}
-
+	//board.Flag_board = true
+	//board.Flag_tetris = true
+	board.Mutex = &sync.Mutex{}
+	board.time_gravity = 0
+	board.Game_over = false
 	board.win = _win
 	board.Batch = _batch
 	//board.blocks = _blocks
