@@ -23,15 +23,15 @@ func DisplayMenu(win *pixelgl.Window, windowWidth, windowHeight float64) string 
 		panic(err)
 	}
 
-	Atlas := text.NewAtlas(face, text.ASCII)                 //Atlas necessary for the font
-	basicTxt := text.New(pixel.V(windowWidth/2, 200), Atlas) //here, I put the coordinates where the
+	Atlas := text.NewAtlas(face, text.ASCII) //Atlas necessary for the font
+	//here, I put the coordinates where the
 	//texts starts to write
 
-	basicTxt.LineHeight = Atlas.LineHeight() * 1.5 // line spacing between strings
-
-	rectQuit := pixel.Rect(basicTxt.Bounds())
-
 	for !win.Closed() {
+		basicTxt := text.New(pixel.V(windowWidth/2, 200), Atlas)
+
+		basicTxt.LineHeight = Atlas.LineHeight() * 1.5 // line spacing between strings
+
 		txt := "Jugar"
 		basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2 //centralize text
 		basicTxt.Color = colornames.Aqua                 //text color
@@ -42,17 +42,22 @@ func DisplayMenu(win *pixelgl.Window, windowWidth, windowHeight float64) string 
 		basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
 		basicTxt.Color = colornames.Green
 		fmt.Fprintln(basicTxt, txt)
-		//rectAprender := pixel.Rect(basicTxt.Bounds())
+		rectLearn := pixel.Rect(basicTxt.Bounds())
 
 		txt = "Cerrar"
 		basicTxt.Dot.X -= basicTxt.BoundsOf(txt).W() / 2
 		basicTxt.Color = colornames.Royalblue
 		fmt.Fprintln(basicTxt, txt)
+		rectQuit := pixel.Rect(basicTxt.Bounds())
+
 		win.Clear(colornames.Black)
 		basicTxt.Draw(win, pixel.IM)
 		win.Update()
 		if (rectJugar.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft)) || win.Pressed(pixelgl.KeyEnter) {
+			fmt.Println("returning play")
 			return "Play"
+		} else if (rectLearn.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft)) || win.Pressed(pixelgl.KeyEscape) {
+			return "Learn"
 		} else if (rectQuit.Contains(win.MousePosition()) && win.JustPressed(pixelgl.MouseButtonLeft)) || win.Pressed(pixelgl.KeyEscape) {
 			return "Quit"
 		}
