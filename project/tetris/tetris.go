@@ -7,9 +7,12 @@ import (
 	"golang.org/x/image/colornames"
 	_ "image/png"
 	//"math"
+	"encoding/gob"
+	"github.com/TetrisAI/project/agent"
 	gb "github.com/TetrisAI/project/gameboard"
 	hp "github.com/TetrisAI/project/helper"
 	_ "math"
+	"os"
 	"time"
 )
 
@@ -36,9 +39,12 @@ type Tetris struct {
 	game_over    bool
 	last_time    time.Time
 	last_action  string
+	time_learn   int
 }
 
 func (t *Tetris) New(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
+	//fmt.Println("antes de eso")
+	//fmt.Println("Win que recivo: ", win)
 	t.win = win
 	t.cfg = cfg
 	t.batch, t.blocksFrames, t.spritesheet, t.background = LoadResources()
@@ -49,42 +55,108 @@ func (t *Tetris) New(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 
 func (t *Tetris) Display() {
 
+	//fmt.Println("hola soy display")
+
 	t.win.Clear(colornames.Black)
 
+	//fmt.Println("3")
 	frames := 0
-	second := time.Tick(time.Second)
-
+	//second := time.Tick(time.Second)
+	//fmt.Println("5")
 	frame := pixel.NewSprite(t.background, t.background.Bounds())
+	//fmt.Println("maldito win")
+	//fmt.Println("win: ", t.win)
 	frame.Draw(t.win, pixel.IM.Moved(t.win.Bounds().Center()))
+	//fmt.Println("4")
 
-	//last := time.Now()
-
+	last := time.Now()
+	//fmt.Println("entrare al for del display")
 	for !t.win.Closed() {
-		frames++
-		select {
-		case <-second:
+		//fmt.Println("Display")
+		if time.Since(last).Seconds() > 2 {
+			last = time.Now()
 			t.win.SetTitle(fmt.Sprintf("%s | FPS: %d", t.cfg.Title, frames))
 			frames = 0
 		}
+		frames++
+
 		t.game_board.Mutex.Lock()
 		frame.Draw(t.win, pixel.IM.Moved(t.win.Bounds().Center()))
 		t.win.Update()
 		t.game_board.Mutex.Unlock()
 
 	}
+	//fmt.Println("bye display")
 	t.game_board.Game_over = true
 }
 
+func (t *Tetris) Learn(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
+	fmt.Println("Learning :D")
+	t.New(win, cfg)
+	go t.Display()
+	a := agent.NewState()
+	a.SetBoard(t.game_board)
+	//fmt.Println(a.GetValueFunction())
+	read_value_function("value.gob", a.GetValueFunction())
+	//fmt.Println(a.GetValueFunction())
+	//fmt.Println("VOY A ENTRAR AQUI")
+	go a.StartTime()
+	//time.Sleep(10000 * time.Millisecond)
+	for i := 0; i < 10000; i++ {
+		a.Start()
+		//fmt.Println(steps)
+		if i%10 == 0 {
+			fmt.Println("Guardando...")
+			save_value_function("value.gob", a.GetValueFunction())
+		}
+	}
+
+}
+func read_value_function(path string, object interface{}) error {
+	file, err := os.Open(path)
+	if err == nil {
+		decoder := gob.NewDecoder(file)
+		err = decoder.Decode(object)
+	}
+	file.Close()
+	return err
+}
+
+func save_value_function(path string, object interface{}) error {
+	file, err := os.Create(path)
+	if err == nil {
+		encoder := gob.NewEncoder(file)
+		encoder.Encode(object)
+	}
+	file.Close()
+	return err
+}
 func (t *Tetris) Play() string {
 
+	fmt.Println("llamare al display")
 	go t.Display()
+	fmt.Println("ya lo llame")
 	go t.game_board.Start()
 
 	for !t.game_board.Game_over {
+		//fmt.Println(!t.game_board.Game_over)
+		//time.Sleep(100 * time.Millisecond)
+		//fmt.Println("prueba 1")
 		action := t.Get_action_player()
+		fmt.Println(action)
 		t.Take_action(action)
 	}
 	return "quit"
+}
+
+func (t *Tetris) Start_time() {
+	for !t.game_board.Game_over {
+		t.time_learn++
+		if t.time_learn > 9 {
+			t.time_learn = 0
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func (t *Tetris) Take_action(action string) {
