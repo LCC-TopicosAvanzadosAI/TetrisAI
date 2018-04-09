@@ -103,7 +103,7 @@ func getYs(board gameboard.Board) string {
 
 	for i := 0; i < len(board.GetGameBoard()[0]); i++ {
 		j := 0
-		for board.GetGameBoard()[i][j] != 0 {
+		for j < 8 && board.GetGameBoard()[i][j] != 0 {
 			j++
 		}
 		Ys = append(Ys, j)
