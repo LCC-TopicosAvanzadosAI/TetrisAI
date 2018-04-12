@@ -188,7 +188,6 @@ type Board struct {
 	activePiece Piece
 	activeShape int
 	nextPiece   Piece
-	gameOver    bool
 	PieceArray  []Piece
 	score       int
 	ScoreTxt    *text.Text
@@ -206,6 +205,10 @@ type Board struct {
 	Draw         bool
 }
 
+func (b *Board) GetWin() *pixelgl.Window {
+	return b.win
+}
+
 func (b *Board) GetActivePiece() Piece {
 	return b.activePiece
 }
@@ -216,7 +219,7 @@ func (b *Board) Score() int {
 
 func (b *Board) Start() {
 	for !b.Game_over {
-
+		//fmt.Println("nani?")
 		b.time_gravity++
 		if b.time_gravity == 9 {
 
@@ -239,8 +242,8 @@ func NewGameBoard(_win *pixelgl.Window, _batch *pixel.Batch, _blocksFrames []pix
 	}
 
 	board := Board{
-		gameOver: false,
-		score:    0,
+		Game_over: false,
+		score:     0,
 	}
 	//board.Flag_board = true
 	//board.Flag_tetris = true
@@ -366,7 +369,7 @@ func (b *Board) MovePiece(dir Movement) string {
 }
 
 func (b *Board) MoveToBottom1() string {
-	b.score += 1
+	//b.score += 1
 	b.UpdateScore()
 	b.drawPiece(b.activePiece, Empty)
 	b.patchActivePiece(Empty)
@@ -401,6 +404,7 @@ func (b *Board) Gravity() string {
 
 func (b *Board) patchActivePiece(c BlockColor) {
 	if b.Draw {
+		//fmt.Println("aqui")
 		boardBlockSize := 20.0 //win.Bounds().Max.X / 10
 		//pic := b.blocksFrames[0] //blockGen(0)
 		imgSize := 40 //pic.Bounds().Max.X
@@ -442,41 +446,19 @@ func (b *Board) checkRowCompletion() {
 				rowWasDeleted = true
 				deleteRowCt++
 				linesFound += 1
-				b.score += 100
+				b.score += 1
 				b.UpdateScore()
 			}
 		}
 		if linesFound == 4 {
-			b.score += 800
+			b.score += 4
 			b.UpdateScore()
 			linesFound = 0
 		}
 	}
 
-	negval2 := 0
-
-	for i := 0; i < 4; i++ {
-		r := b.activePiece.Piece_[i].row
-		negval2 -= r
-	}
-
-	negval := negval2
-	ant := -1
-	for i := 0; i < 4; i++ {
-		r := b.activePiece.Piece_[i].row
-		if r == ant {
-			continue
-		}
-		for c := 0; c < 10; c++ {
-			if b.gameboard[r][c] == Empty {
-				negval -= 1
-			}
-		}
-		ant = r
-	}
-	b.score += negval
 	//fmt.Println("Por tu jugada ", negval)
-	b.UpdateScore()
+	//b.UpdateScore()
 
 }
 
@@ -487,34 +469,35 @@ func (b *Board) deleteRow(row int) {
 			b.gameboard[r][c] = b.gameboard[r+1][c]
 		}
 	}
-	b.UpdateBoard()
+	if b.Draw {
+		b.UpdateBoard()
+	}
 }
 
 func (b *Board) UpdateBoard() {
-	//b.updateScore()
-	//b.win.Clear(colornames.Black)
-	b.Batch.Clear()
-	boardBlockSize := 20.0 //win.Bounds().Max.X / 10
-	imgSize := 40          //pic.Bounds().Max.X
-	scaleFactor := float64(boardBlockSize) / float64(imgSize)
+	if b.Draw {
+		b.Batch.Clear()
+		boardBlockSize := 20.0 //win.Bounds().Max.X / 10
+		imgSize := 40          //pic.Bounds().Max.X
+		scaleFactor := float64(boardBlockSize) / float64(imgSize)
 
-	for col := 0; col < b.BoardCols; col++ {
-		for row := 0; row < b.BoardRows-2; row++ {
-			val := b.gameboard[row][col]
-			if val == Empty {
-				continue
+		for col := 0; col < b.BoardCols; col++ {
+			for row := 0; row < b.BoardRows-2; row++ {
+				val := b.gameboard[row][col]
+				if val == Empty {
+					continue
+				}
+				x := float64(col)*boardBlockSize + boardBlockSize/2
+				y := float64(row)*boardBlockSize + boardBlockSize/2
+
+				block := pixel.NewSprite(b.spritesheet, b.blocksFrames[val])
+				//b.blocks = append(b.blocks, block)
+				block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, scaleFactor).Moved(pixel.V(x+282, y+25)))
 			}
-			x := float64(col)*boardBlockSize + boardBlockSize/2
-			y := float64(row)*boardBlockSize + boardBlockSize/2
-
-			block := pixel.NewSprite(b.spritesheet, b.blocksFrames[val])
-			//b.blocks = append(b.blocks, block)
-			block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, scaleFactor).Moved(pixel.V(x+282, y+25)))
 		}
+		b.Batch.Draw(b.win)
+		b.win.Update()
 	}
-	b.Batch.Draw(b.win)
-	b.win.Update()
-
 }
 
 func (b *Board) drawNextPiece(c BlockColor) {
@@ -537,12 +520,6 @@ func (b *Board) drawNextPiece(c BlockColor) {
 	}
 }
 
-/*func (b *Board) clearScore() {
-	//mmm i have no idea how to do this
-	block := pixel.NewSprite(b.spritesheet, b.blocksFrames[Empty])
-	block.Draw(b.Batch, pixel.IM.Scaled(pixel.ZV, 2).Moved(pixel.V(200, 307)))
-}*/
-
 func (b *Board) UpdateScore() {
 	b.win.Clear(colornames.Black)
 	b.ScoreTxt.Clear()
@@ -554,6 +531,19 @@ func (b *Board) SetScore(score int) {
 	b.score = score
 }
 
+func (b *Board) ResetBoard() {
+	for i := range b.gameboard {
+		for j := range b.gameboard[i] {
+			b.gameboard[i][j] = 0
+		}
+	}
+	b.PieceArray = make([]Piece, 0)
+	b.FillArray()
+
+	b.UpdateBoard()
+
+}
+
 func (b *Board) AddPiece() string {
 	//b.score++
 	b.drawNextPiece(Empty)
@@ -561,15 +551,10 @@ func (b *Board) AddPiece() string {
 	b.activePiece = b.nextPiece
 
 	if b.checkCollision(b.activePiece, 0, 0) {
-
-		for i := range b.gameboard {
-			for j := range b.gameboard[i] {
-				b.gameboard[i][j] = 0
-			}
-		}
-		b.score -= 50
-		b.win.Clear(colornames.Black)
-		b.UpdateBoard()
+		b.Game_over = true
+		b.score -= 1
+		//b.win.Clear(colornames.Black)
+		//b.UpdateBoard()
 	}
 	b.drawPiece(b.activePiece, b.activePiece.color)
 	b.patchActivePiece(b.activePiece.color)
@@ -582,11 +567,9 @@ func (b *Board) AddPiece() string {
 	b.drawNextPiece(b.nextPiece.color)
 
 	return ""
-	//b.DisplayBoard()
 }
 
 func (b *Board) drawPiece(p Piece, c BlockColor) {
-
 	for i := 0; i < 4; i++ {
 		b.gameboard[p.Piece_[i].row][p.Piece_[i].col] = c
 	}

@@ -49,6 +49,7 @@ func (t *Tetris) New(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 	t.cfg = cfg
 	t.batch, t.blocksFrames, t.spritesheet, t.background = LoadResources()
 	t.game_board = gb.NewGameBoard(t.win, t.batch, t.blocksFrames, t.spritesheet)
+	t.game_board.Draw = false
 	t.game_over = false
 	t.last_time = time.Now()
 }
@@ -56,7 +57,7 @@ func (t *Tetris) New(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 func (t *Tetris) Display() {
 
 	//fmt.Println("hola soy display")
-
+	t.game_board.Draw = true
 	t.win.Clear(colornames.Black)
 
 	//fmt.Println("3")
@@ -96,17 +97,16 @@ func (t *Tetris) Learn(win *pixelgl.Window, cfg pixelgl.WindowConfig) {
 	go t.Display()
 	a := agent.NewState()
 	a.SetBoard(t.game_board)
-	//fmt.Println(a.GetValueFunction())
 	read_value_function("value.gob", a.GetValueFunction())
-	//fmt.Println(a.GetValueFunction())
-	//fmt.Println("VOY A ENTRAR AQUI")
 	go a.StartTime()
-	//time.Sleep(10000 * time.Millisecond)
-	for i := 0; i < 10000; i++ {
-		a.Start()
-		//fmt.Println(steps)
-		if i%10 == 0 {
-			fmt.Println("Guardando...")
+	//steps := 0
+	for i := 0; i < 100000; i++ {
+		steps := a.Start(1)
+
+		//fmt.Println(float64(steps) / float64(i+1))
+		if i%1 == 0 {
+			fmt.Println(steps)
+			//fmt.Println("Guardando...")
 			save_value_function("value.gob", a.GetValueFunction())
 		}
 	}
@@ -149,22 +149,13 @@ func (t *Tetris) Play() string {
 	return "quit"
 }
 
-func (t *Tetris) Start_time() {
-	for !t.game_board.Game_over {
-		t.time_learn++
-		if t.time_learn > 9 {
-			t.time_learn = 0
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
 func (t *Tetris) Take_action(action string) {
 	if time.Since(t.last_time).Seconds() < 0.3 && t.last_action == action {
 		return
 	}
 	t.last_time = time.Now()
 	t.last_action = action
+	//fmt.Println("amm")
 	t.game_board.Mutex.Lock()
 	switch action {
 	case "KeyDown":
